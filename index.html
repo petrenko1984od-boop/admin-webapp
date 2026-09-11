@@ -151,9 +151,7 @@
                         <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">📦 Позиции материалов:</label>
                         <button type="button" onclick="addOrderItemRow()" class="text-xs bg-emerald-50 text-[#15803d] hover:bg-emerald-100 font-semibold px-2.5 py-1 rounded-lg transition">➕ Добавить позицию</button>
                     </div>
-                    <div id="order-items-container" class="space-y-2">
-                        <!-- Динамические строки материалов будут здесь -->
-                    </div>
+                    <div id="order-items-container" class="space-y-2"></div>
                 </div>
 
                 <div>
@@ -170,17 +168,27 @@
 
     <!-- МОДАЛЬНОЕ ОКНО ЗАКРЫТИЯ ЗАЯВКИ СНАБЖЕНЦЕМ -->
     <div id="close-order-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4 border-t-4 border-[#15803d]">
+        <div class="bg-white rounded-xl shadow-lg max-w-lg w-full p-6 space-y-4 border-t-4 border-[#15803d] max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b pb-2">
                 <h3 class="text-base font-bold text-gray-800">🛒 Закупка материала</h3>
                 <button onclick="closeModalCloseOrder()" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
             </div>
             <form onsubmit="confirmOrderPurchase(event)" class="space-y-3">
                 <input type="hidden" id="modal-order-id">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">Фактическая сумма закупки (грн):</label>
-                    <input type="number" step="0.01" id="modal-order-sum" required placeholder="5400" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
+                
+                <!-- БЛОК СТОИМОСТИ ПОЗИЦИЙ -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">💰 Стоимость позиций (грн):</label>
+                    <div id="modal-order-items-price-container" class="space-y-2 bg-gray-50 p-3 rounded-lg border">
+                        <!-- Динамические строки цен по позициям -->
+                    </div>
                 </div>
+
+                <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 flex justify-between items-center">
+                    <span class="text-xs font-bold text-[#15803d] uppercase">Итого общая сумма:</span>
+                    <span id="modal-order-total-sum-label" class="text-base font-bold text-[#166534]">0 грн</span>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Поставщик / Магазин / База:</label>
                     <input type="text" id="modal-order-supplier" required placeholder="Эпицентр / База на Мельницкой" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
@@ -839,7 +847,6 @@
             }
         }
 
-        // --- УПРАВЛЕНИЕ ПОЗИЦИЯМИ В НОВОЙ ЗАЯВКЕ ---
         function initOrderItems() {
             const container = document.getElementById('order-items-container');
             container.innerHTML = '';
@@ -893,7 +900,6 @@
                 return;
             }
 
-            // Собираем все позиции из строк
             const itemRows = document.querySelectorAll('#order-items-container > div');
             let itemsList = [];
             itemRows.forEach(row => {
@@ -914,7 +920,7 @@
                 id: Date.now(),
                 project: document.getElementById('order-proj').value,
                 section: sectionVal,
-                items: itemsList, // Массив позиций
+                items: itemsList,
                 date: document.getElementById('order-date').value,
                 status: "🔴 Новая",
                 purchaseData: null,
@@ -944,7 +950,6 @@
                 if (o.status === '🟡 В работе') statusBadgeClass = 'bg-yellow-100 text-yellow-700';
                 if (o.status === '🟢 Закрыта') statusBadgeClass = 'bg-green-100 text-green-700';
 
-                // Поддержка отображения списка позиций (и обратная совместимость со старыми заявками)
                 let itemsHtml = '';
                 if (o.items && Array.isArray(o.items)) {
                     itemsHtml = o.items.map(it => `<div class="text-gray-800">📦 <b>${it}</b></div>`).join('');
@@ -1004,10 +1009,43 @@
         }
 
         function openCloseOrderModal(id) {
+            const orders = JSON.parse(localStorage.getItem('rsk_orders'));
+            const order = orders.find(o => o.id === id);
+            if (!order) return;
+
             document.getElementById('modal-order-id').value = id;
-            document.getElementById('modal-order-sum').value = '';
             document.getElementById('modal-order-supplier').value = '';
+
+            // Генерируем поля ввода стоимости для каждой позиции заявки
+            const container = document.getElementById('modal-order-items-price-container');
+            let itemsList = [];
+            if (order.items && Array.isArray(order.items)) {
+                itemsList = order.items;
+            } else if (order.material) {
+                itemsList = [`${order.material} — ${order.quantity}`];
+            }
+
+            container.innerHTML = itemsList.map((itemText, idx) => `
+                <div class="flex items-center justify-between gap-2 bg-white p-2 rounded border">
+                    <span class="text-xs text-gray-800 font-medium truncate flex-1">📦 ${itemText}</span>
+                    <div class="w-32 flex items-center gap-1">
+                        <input type="number" step="0.01" placeholder="Цена, грн" oninput="calculateModalTotal()" class="modal-item-price w-full border rounded p-1 text-xs outline-none focus:ring-1 focus:ring-[#15803d]" required>
+                    </div>
+                </div>
+            `).join('');
+
+            calculateModalTotal();
             document.getElementById('close-order-modal').classList.remove('hidden');
+        }
+
+        function calculateModalTotal() {
+            const priceInputs = document.querySelectorAll('.modal-item-price');
+            let total = 0;
+            priceInputs.forEach(input => {
+                const val = parseFloat(input.value) || 0;
+                total += val;
+            });
+            document.getElementById('modal-order-total-sum-label').innerText = `${total.toLocaleString('ru-RU')} грн`;
         }
 
         function closeModalCloseOrder() {
@@ -1017,27 +1055,32 @@
         function confirmOrderPurchase(e) {
             e.preventDefault();
             const id = parseInt(document.getElementById('modal-order-id').value);
-            const sum = parseFloat(document.getElementById('modal-order-sum').value) || 0;
             const supplier = document.getElementById('modal-order-supplier').value.trim();
             const payment = document.getElementById('modal-order-payment').value;
+
+            // Считаем общую сумму по всем введенным ценам позиций
+            const priceInputs = document.querySelectorAll('.modal-item-price');
+            let totalSum = 0;
+            priceInputs.forEach(input => {
+                totalSum += parseFloat(input.value) || 0;
+            });
 
             let orders = JSON.parse(localStorage.getItem('rsk_orders'));
             let targetOrder = orders.find(o => o.id === id);
 
             if (!targetOrder) return;
 
-            // 1. Сохраняем данные о покупке в заявку
             targetOrder.status = "🟢 Закрыта";
-            targetOrder.purchaseData = { sum, supplier, payment };
+            targetOrder.purchaseData = { sum: totalSum, supplier, payment };
             localStorage.setItem('rsk_orders', JSON.stringify(orders));
 
-            // 2. АВТОМАТИЧЕСКИ ПЕРЕНОСИМ СУММУ В ФАКТ МАТЕРИАЛЫ ОБЪЕКТА / РАЗДЕЛА
+            // Автоматически добавляем сумму в Факт материалы объекта
             let projects = JSON.parse(localStorage.getItem('rsk_projects'));
             projects = projects.map(proj => {
                 if (proj.name === targetOrder.project && proj.sections) {
                     proj.sections = proj.sections.map(sec => {
                         if (sec.name === targetOrder.section) {
-                            sec.factMaterials += sum;
+                            sec.factMaterials += totalSum;
                             sec.factTotal = sec.factWorks + sec.factMaterials;
                         }
                         return sec;
@@ -1049,7 +1092,7 @@
 
             closeModalCloseOrder();
             renderOrders();
-            alert(`Закупка успешно проведена! Сумма ${sum.toLocaleString('ru-RU')} грн автоматически добавлена в «Факт материалы» раздела «${targetOrder.section}» объекта «${targetOrder.project}».`);
+            alert(`Закупка успешно проведена! Общая сумма ${totalSum.toLocaleString('ru-RU')} грн автоматически добавлена в «Факт материалы» раздела «${targetOrder.section}» объекта «${targetOrder.project}».`);
         }
 
         function deleteOrder(id) {
