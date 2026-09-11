@@ -12,8 +12,9 @@
     <header class="bg-blue-900 text-white shadow-md">
         <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
             <h1 class="text-xl font-bold tracking-wide">🏗 RSK Odessa — Управление проектами</h1>
-            <div class="flex gap-2 mt-3 sm:mt-0">
+            <div class="flex flex-wrap gap-2 mt-3 sm:mt-0 items-center">
                 <button onclick="switchTab('projects')" id="btn-projects" class="px-3 py-2 bg-blue-700 rounded-lg text-xs sm:text-sm font-semibold transition shadow">🏗 Объекты</button>
+                <button onclick="switchTab('employees')" id="btn-employees" class="px-3 py-2 bg-blue-800 hover:bg-blue-700 rounded-lg text-xs sm:text-sm font-semibold transition shadow">👥 Сотрудники (<span id="employees-badge">0</span>)</button>
                 <button onclick="switchTab('orders')" id="btn-orders" class="px-3 py-2 bg-blue-800 hover:bg-blue-700 rounded-lg text-xs sm:text-sm font-semibold transition shadow">📦 Снабжение (<span id="orders-badge">0</span>)</button>
                 <button onclick="switchTab('new-order')" id="btn-new-order" class="px-3 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-xs sm:text-sm font-semibold transition shadow">➕ Новая заявка</button>
             </div>
@@ -33,7 +34,18 @@
             </div>
         </section>
 
-        <!-- ВКЛАДКА 2: СНАБЖЕНИЕ И КОНТРОЛЬ ЗАЯВОК -->
+        <!-- ВКЛАДКА 2: СОТРУДНИКИ -->
+        <section id="tab-employees" class="hidden space-y-4">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm">
+                <h2 class="text-lg font-bold text-gray-800">👥 Управление сотрудниками</h2>
+                <button onclick="openAddEmployeeModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow">➕ Добавить сотрудника</button>
+            </div>
+            <div id="employees-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Сюда динамически рендерятся сотрудники -->
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА 3: СНАБЖЕНИЕ И КОНТРОЛЬ ЗАЯВОК -->
         <section id="tab-orders" class="hidden bg-white rounded-xl shadow-md p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
                 <h2 class="text-lg font-bold text-gray-800">📦 Контроль заявок на материалы</h2>
@@ -44,7 +56,7 @@
             </div>
         </section>
 
-        <!-- ВКЛАДКА 3: СОЗДАНИЕ ЗАЯВКИ -->
+        <!-- ВКЛАДКА 4: СОЗДАНИЕ ЗАЯВКИ -->
         <section id="tab-new-order" class="hidden bg-white rounded-xl shadow-md p-6 max-w-xl mx-auto space-y-4">
             <h2 class="text-lg font-bold text-gray-800 border-b pb-3">📝 Оформление заявки на закупку</h2>
             <form onsubmit="submitMaterialOrder(event)" class="space-y-3">
@@ -81,7 +93,7 @@
     </main>
 
     <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ ОБЪЕКТА -->
-    <div id="project-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+    <div id="project-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4">
             <h3 class="text-lg font-bold text-gray-800">🏗 Добавить новый объект</h3>
             <form onsubmit="saveNewProject(event)" class="space-y-3">
@@ -101,14 +113,59 @@
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ СОТРУДНИКА -->
+    <div id="employee-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4">
+            <h3 class="text-lg font-bold text-gray-800">👥 Добавить сотрудника</h3>
+            <form onsubmit="saveNewEmployee(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">ФИО сотрудника:</label>
+                    <input type="text" id="emp-name" required placeholder="Иван Прорабов" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Должность:</label>
+                    <select id="emp-position" class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Прораб">Прораб</option>
+                        <option value="Снабженец">Снабженец</option>
+                        <option value="Мастер участка">Мастер участка</option>
+                        <option value="Инженер ПТО">Инженер ПТО</option>
+                        <option value="Монтажник / Строитель">Монтажник / Строитель</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Привязанный объект:</label>
+                    <select id="emp-project" class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                        <!-- Заполняется динамически -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Телефон:</label>
+                    <input type="tel" id="emp-phone" required placeholder="+38 (050) 000-00-00" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg text-sm transition">Сохранить</button>
+                    <button type="button" onclick="closeAddEmployeeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 rounded-lg text-sm transition">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Инициализация дефолтных данных, если в LocalStorage пусто
+        // Инициализация дефолтных данных в LocalStorage, если пусто
         if (!localStorage.getItem('rsk_projects')) {
             const defaultProjects = [
                 { id: 1, name: "Частный дом (Ивановка)", sections: ["Фундамент", "Коробка стен", "Кровля", "Инженерные сети"] },
                 { id: 2, name: "Реконструкция офиса", sections: ["Демонтаж", "Перегородки", "Чистовая отделка", "Электрика"] }
             ];
             localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
+        }
+
+        if (!localStorage.getItem('rsk_employees')) {
+            const defaultEmployees = [
+                { id: 1, name: "Иван Прорабов", position: "Главный прораб", project: "Частный дом (Ивановка)", phone: "+38 (050) 123-45-67" },
+                { id: 2, name: "Олег Снабженец", position: "Снабженец", project: "Все объекты", phone: "+38 (067) 987-65-43" }
+            ];
+            localStorage.setItem('rsk_employees', JSON.stringify(defaultEmployees));
         }
 
         if (!localStorage.getItem('rsk_orders')) {
@@ -119,18 +176,20 @@
 
         // Управление вкладками
         function switchTab(tabId) {
-            ['projects', 'orders', 'new-order'].forEach(t => {
+            ['projects', 'employees', 'orders', 'new-order'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
-                document.getElementById(`btn-${t === 'new-order' ? 'new-order' : t}`).classList.replace('bg-blue-700', 'bg-blue-800');
+                const btn = document.getElementById(`btn-${t === 'new-order' ? 'new-order' : t}`);
+                if (btn) btn.classList.replace('bg-blue-700', 'bg-blue-800');
             });
 
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             const activeBtn = document.getElementById(`btn-${tabId === 'new-order' ? 'new-order' : tabId}`);
-            activeBtn.classList.replace('bg-blue-800', 'bg-blue-700');
+            if (activeBtn) activeBtn.classList.replace('bg-blue-800', 'bg-blue-700');
 
             if (tabId === 'projects') renderProjects();
+            if (tabId === 'employees') renderEmployees();
             if (tabId === 'orders') renderOrders();
-            if (tabId === 'new-order') updateProjectDropdown();
+            if (tabId === 'new-order') updateProjectDropdowns();
         }
 
         // Рендер проектов и смет
@@ -154,6 +213,32 @@
                         <div class="flex flex-wrap gap-1">
                             ${p.sections.map(s => `<span class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">${s}</span>`).join('')}
                         </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Рендер сотрудников
+        function renderEmployees() {
+            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            const container = document.getElementById('employees-container');
+            updateEmployeeBadgeCount();
+            
+            if (employees.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-sm col-span-2 text-center py-6">Список сотрудников пуст</p>`;
+                return;
+            }
+
+            container.innerHTML = employees.map(emp => `
+                <div class="bg-white rounded-xl shadow-sm border p-4 flex flex-col justify-between space-y-3">
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-blue-900 text-base">👤 ${emp.name}</h3>
+                            <button onclick="deleteEmployee(${emp.id})" class="text-red-400 hover:text-red-600 text-xs">🗑 Удалить</button>
+                        </div>
+                        <p class="text-xs text-gray-600"><strong>Должность:</strong> ${emp.position}</p>
+                        <p class="text-xs text-gray-600"><strong>Объект:</strong> ${emp.project}</p>
+                        <p class="text-xs text-gray-600"><strong>Телефон:</strong> <a href="tel:${emp.phone}" class="text-blue-600 hover:underline">${emp.phone}</a></p>
                     </div>
                 </div>
             `).join('');
@@ -186,11 +271,55 @@
             }
         }
 
-        // Заполнение выпадающего списка объектов в форме заявки
-        function updateProjectDropdown() {
+        // Модальное окно сотрудников
+        function openAddEmployeeModal() {
+            updateProjectDropdowns();
+            document.getElementById('employee-modal').classList.remove('hidden');
+        }
+        function closeAddEmployeeModal() { document.getElementById('employee-modal').classList.add('hidden'); }
+
+        function saveNewEmployee(e) {
+            e.preventDefault();
+            const name = document.getElementById('emp-name').value.trim();
+            const position = document.getElementById('emp-position').value;
+            const project = document.getElementById('emp-project').value;
+            const phone = document.getElementById('emp-phone').value.trim();
+
+            let employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            employees.push({ id: Date.now(), name, position, project, phone });
+            localStorage.setItem('rsk_employees', JSON.stringify(employees));
+
+            document.getElementById('emp-name').value = '';
+            document.getElementById('emp-phone').value = '';
+            closeAddEmployeeModal();
+            renderEmployees();
+        }
+
+        function deleteEmployee(id) {
+            if (confirm('Удалить сотрудника из списка?')) {
+                let employees = JSON.parse(localStorage.getItem('rsk_employees')).filter(e => e.id !== id);
+                localStorage.setItem('rsk_employees', JSON.stringify(employees));
+                renderEmployees();
+                updateEmployeeBadgeCount();
+            }
+        }
+
+        // Заполнение выпадающих списков объектов в формах заявки и добавления сотрудника
+        function updateProjectDropdowns() {
             const projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            const select = document.getElementById('order-proj');
-            select.innerHTML = projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+            
+            // Для заявки
+            const orderSelect = document.getElementById('order-proj');
+            if (orderSelect) {
+                orderSelect.innerHTML = projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+            }
+
+            // Для сотрудника
+            const empSelect = document.getElementById('emp-project');
+            if (empSelect) {
+                empSelect.innerHTML = `<option value="Все объекты">Все объекты (общий)</option>` + 
+                    projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+            }
         }
 
         // Создание заявки
@@ -213,7 +342,7 @@
 
             document.getElementById('order-mat').value = '';
             document.getElementById('order-qty').value = '';
-            updateBadgeCount();
+            updateOrdersBadgeCount();
             alert('✅ Заявка успешно отправлена в снабжение!');
             switchTab('orders');
         }
@@ -222,7 +351,7 @@
         function renderOrders() {
             const orders = JSON.parse(localStorage.getItem('rsk_orders'));
             const container = document.getElementById('orders-container');
-            updateBadgeCount();
+            updateOrdersBadgeCount();
 
             if (orders.length === 0) {
                 container.innerHTML = `<p class="text-center text-gray-400 py-6 text-sm">Активных заявок нет</p>`;
@@ -270,24 +399,32 @@
             let orders = JSON.parse(localStorage.getItem('rsk_orders')).filter(o => o.id !== id);
             localStorage.setItem('rsk_orders', JSON.stringify(orders));
             renderOrders();
-            updateBadgeCount();
+            updateOrdersBadgeCount();
         }
 
         function clearOrders() {
             if (confirm('Очистить всю историю заявок?')) {
                 localStorage.setItem('rsk_orders', JSON.stringify([]));
                 renderOrders();
-                updateBadgeCount();
+                updateOrdersBadgeCount();
             }
         }
 
-        function updateBadgeCount() {
+        function updateOrdersBadgeCount() {
             const orders = JSON.parse(localStorage.getItem('rsk_orders'));
-            document.getElementById('orders-badge').innerText = orders.length;
+            const badge = document.getElementById('orders-badge');
+            if (badge) badge.innerText = orders.length;
         }
 
-        // Первичный запуск счетчика
-        updateBadgeCount();
+        function updateEmployeeBadgeCount() {
+            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            const badge = document.getElementById('employees-badge');
+            if (badge) badge.innerText = employees.length;
+        }
+
+        // Первичный запуск счетчиков и рендеринга
+        updateOrdersBadgeCount();
+        updateEmployeeBadgeCount();
         renderProjects();
     </script>
 </body>
