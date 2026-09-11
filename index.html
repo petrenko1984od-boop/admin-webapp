@@ -135,7 +135,7 @@
         <!-- ВКЛАДКА 4: НОВАЯ ЗАЯВКА -->
         <section id="tab-new-order" class="hidden bg-white rounded-xl shadow-md p-6 max-w-xl mx-auto space-y-4 border-t-4 border-[#15803d]">
             <h2 class="text-lg font-bold text-gray-800 border-b pb-3">📝 Оформление заявки на закупку</h2>
-            <form onsubmit="submitMaterialOrder(event)" class="space-y-3">
+            <form onsubmit="submitMaterialOrder(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Объект:</label>
                     <select id="order-proj" onchange="onOrderProjectChange()" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]"></select>
@@ -144,16 +144,18 @@
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Раздел / Этап:</label>
                     <select id="order-section" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]"></select>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Наименование материала:</label>
-                        <input type="text" id="order-mat" required placeholder="Кабель ВВГнг" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
+
+                <!-- СПИСОК ПОЗИЦИЙ МАТЕРИАЛОВ -->
+                <div class="space-y-2 border-t border-b py-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">📦 Позиции материалов:</label>
+                        <button type="button" onclick="addOrderItemRow()" class="text-xs bg-emerald-50 text-[#15803d] hover:bg-emerald-100 font-semibold px-2.5 py-1 rounded-lg transition">➕ Добавить позицию</button>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Количество и ед.:</label>
-                        <input type="text" id="order-qty" required placeholder="100 м" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
+                    <div id="order-items-container" class="space-y-2">
+                        <!-- Динамические строки материалов будут здесь -->
                     </div>
                 </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Желаемая дата поставки:</label>
                     <input type="date" id="order-date" required class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
@@ -351,7 +353,10 @@
             if (tabId === 'projects') renderProjects();
             if (tabId === 'employees') renderEmployees();
             if (tabId === 'orders') renderOrders();
-            if (tabId === 'new-order') updateProjectDropdowns();
+            if (tabId === 'new-order') {
+                updateProjectDropdowns();
+                initOrderItems();
+            }
         }
 
         function renderProjects() {
@@ -834,6 +839,52 @@
             }
         }
 
+        // --- УПРАВЛЕНИЕ ПОЗИЦИЯМИ В НОВОЙ ЗАЯВКЕ ---
+        function initOrderItems() {
+            const container = document.getElementById('order-items-container');
+            container.innerHTML = '';
+            addOrderItemRow();
+        }
+
+        function addOrderItemRow() {
+            const container = document.getElementById('order-items-container');
+            const rowId = Date.now() + Math.random();
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 bg-gray-50 p-2 rounded-lg border';
+            div.id = `row-${rowId}`;
+            div.innerHTML = `
+                <div class="flex-1">
+                    <input type="text" placeholder="Наименование (напр. Кабель ВВГнг)" required class="order-item-name w-full border rounded p-2 text-xs outline-none focus:ring-1 focus:ring-[#15803d] bg-white">
+                </div>
+                <div class="w-20">
+                    <input type="number" step="any" placeholder="Кол-во" required class="order-item-qty w-full border rounded p-2 text-xs outline-none focus:ring-1 focus:ring-[#15803d] bg-white">
+                </div>
+                <div class="w-24">
+                    <select class="order-item-unit w-full border rounded p-2 text-xs bg-white outline-none focus:ring-1 focus:ring-[#15803d]">
+                        <option value="м">м</option>
+                        <option value="шт">шт</option>
+                        <option value="кг">кг</option>
+                        <option value="т">т</option>
+                        <option value="м²">м²</option>
+                        <option value="м³">м³</option>
+                        <option value="уп">уп</option>
+                        <option value="л">л</option>
+                    </select>
+                </div>
+                <button type="button" onclick="removeOrderItemRow('${rowId}')" class="text-red-400 hover:text-red-600 px-2 py-1 text-xs font-bold">✕</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeOrderItemRow(rowId) {
+            const container = document.getElementById('order-items-container');
+            if (container.children.length > 1) {
+                document.getElementById(`row-${rowId}`).remove();
+            } else {
+                alert('Заявка должна содержать хотя бы одну позицию материала.');
+            }
+        }
+
         function submitMaterialOrder(e) {
             e.preventDefault();
             const sectionVal = document.getElementById('order-section').value;
@@ -842,12 +893,28 @@
                 return;
             }
 
+            // Собираем все позиции из строк
+            const itemRows = document.querySelectorAll('#order-items-container > div');
+            let itemsList = [];
+            itemRows.forEach(row => {
+                const name = row.querySelector('.order-item-name').value.trim();
+                const qty = row.querySelector('.order-item-qty').value.trim();
+                const unit = row.querySelector('.order-item-unit').value;
+                if (name && qty) {
+                    itemsList.push(`${name} — ${qty} ${unit}`);
+                }
+            });
+
+            if (itemsList.length === 0) {
+                alert('Добавьте хотя бы одну позицию материала');
+                return;
+            }
+
             const newOrder = {
                 id: Date.now(),
                 project: document.getElementById('order-proj').value,
                 section: sectionVal,
-                material: document.getElementById('order-mat').value.trim(),
-                quantity: document.getElementById('order-qty').value.trim(),
+                items: itemsList, // Массив позиций
                 date: document.getElementById('order-date').value,
                 status: "🔴 Новая",
                 purchaseData: null,
@@ -858,8 +925,6 @@
             orders.unshift(newOrder);
             localStorage.setItem('rsk_orders', JSON.stringify(orders));
 
-            document.getElementById('order-mat').value = '';
-            document.getElementById('order-qty').value = '';
             updateOrdersBadgeCount();
             switchTab('orders');
         }
@@ -879,6 +944,14 @@
                 if (o.status === '🟡 В работе') statusBadgeClass = 'bg-yellow-100 text-yellow-700';
                 if (o.status === '🟢 Закрыта') statusBadgeClass = 'bg-green-100 text-green-700';
 
+                // Поддержка отображения списка позиций (и обратная совместимость со старыми заявками)
+                let itemsHtml = '';
+                if (o.items && Array.isArray(o.items)) {
+                    itemsHtml = o.items.map(it => `<div class="text-gray-800">📦 <b>${it}</b></div>`).join('');
+                } else if (o.material) {
+                    itemsHtml = `<div class="text-gray-800">📦 <b>${o.material}</b> — <span class="text-[#15803d] font-semibold">${o.quantity}</span></div>`;
+                }
+
                 let purchaseInfo = '';
                 if (o.purchaseData) {
                     purchaseInfo = `
@@ -892,14 +965,16 @@
 
                 return `
                     <div class="border rounded-xl p-4 bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-sm">
-                        <div class="space-y-1 w-full md:w-3/4">
+                        <div class="space-y-1.5 w-full md:w-3/4">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="font-bold text-[#166534]">🏗 ${o.project}</span>
                                 <span class="text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-700">${o.section}</span>
                                 <span class="px-2 py-0.5 text-xs font-bold rounded ${statusBadgeClass}">${o.status}</span>
                             </div>
-                            <p>📦 <b>${o.material}</b> — <span class="text-[#15803d] font-semibold">${o.quantity}</span></p>
-                            <p class="text-xs text-gray-500">⏳ Желаемый срок: <b>${o.date}</b></p>
+                            <div class="space-y-0.5 pl-1 text-xs sm:text-sm">
+                                ${itemsHtml}
+                            </div>
+                            <p class="text-xs text-gray-500 pt-1">⏳ Желаемый срок: <b>${o.date}</b></p>
                             ${purchaseInfo}
                         </div>
                         <div class="flex flex-col gap-2 w-full md:w-auto items-end">
