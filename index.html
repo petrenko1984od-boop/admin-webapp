@@ -74,11 +74,32 @@
                     </div>
                 </div>
 
-                <!-- Место для будущего функционала объекта -->
+                <!-- БЛОК СМЕТЫ ОБЪЕКТА -->
                 <div class="border-t pt-4 space-y-3">
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">🛠 Дополнительный функционал объекта</h3>
-                    <div class="p-4 bg-gray-50 rounded-xl border border-dashed text-center text-gray-400 text-xs">
-                        Здесь в следующих шагах мы разместим сметы, этапы, файлы или привязанные материалы этого объекта.
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">📊 Смета объекта</h3>
+                    <div class="p-4 bg-gray-50 rounded-xl border space-y-3">
+                        <div id="estimate-empty-state" class="text-xs text-gray-500">
+                            Смета еще не загружена. Выберите файл (Excel, PDF или документ) и нажмите «Загрузить смету».
+                        </div>
+                        <div id="estimate-file-info" class="hidden flex items-center justify-between bg-white p-3 rounded-lg border text-xs">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <span class="text-lg">📄</span>
+                                <div>
+                                    <p class="font-bold text-gray-800 truncate" id="estimate-file-name">Название файла</p>
+                                    <p class="text-[10px] text-gray-400" id="estimate-file-date">Дата загрузки</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="viewEstimateFile()" class="bg-emerald-100 hover:bg-emerald-200 text-[#15803d] px-3 py-1.5 rounded-lg font-semibold transition">👁 Посмотреть</button>
+                                <button onclick="deleteEstimateFile()" class="bg-red-50 hover:bg-red-100 text-red-500 px-2 py-1.5 rounded-lg transition">🗑</button>
+                            </div>
+                        </div>
+
+                        <!-- Форма загрузки -->
+                        <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                            <input type="file" id="estimate-file-input" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-[#15803d] hover:file:bg-emerald-100 cursor-pointer border rounded-lg bg-white">
+                            <button onclick="uploadEstimate()" class="bg-[#15803d] hover:bg-[#166534] text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow whitespace-nowrap">📤 Загрузить смету</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -221,7 +242,7 @@
     </div>
 
     <script>
-        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v5')) {
+        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v6')) {
             const defaultEmployees = [
                 { id: 1, name: "Иван Прорабов", position: "Прораб", phone: "+38 (050) 123-45-67", notes: "" },
                 { id: 2, name: "Петренко Сергей Николаевич", position: "Прораб", phone: "+380507016548", notes: "" },
@@ -230,11 +251,11 @@
             localStorage.setItem('rsk_employees', JSON.stringify(defaultEmployees));
 
             const defaultProjects = [
-                { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", notes: "" },
-                { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", notes: "" }
+                { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", notes: "", estimate: null },
+                { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", notes: "", estimate: null }
             ];
             localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
-            localStorage.setItem('rsk_projects_v5', 'true');
+            localStorage.setItem('rsk_projects_v6', 'true');
         }
 
         if (!localStorage.getItem('rsk_orders')) {
@@ -304,6 +325,7 @@
                             </div>
                             <p class="text-xs text-gray-600"><strong>👨‍💼 Прораб:</strong> <span class="text-gray-900 font-semibold">${p.foreman || 'Не назначен'}</span></p>
                             ${foremanPhone ? `<p class="text-xs text-gray-600"><strong>📞 Телефон:</strong> <span class="text-[#15803d] font-semibold">${foremanPhone}</span></p>` : ''}
+                            <p class="text-[11px] text-gray-400 pt-1">📊 Смета: ${p.estimate ? '✅ Загружена' : '❌ Не загружена'}</p>
                         </div>
                     </button>
                 `;
@@ -335,7 +357,104 @@
             document.getElementById('card-proj-notes').value = p.notes || '';
             document.getElementById('card-proj-delete-btn').setAttribute('onclick', `deleteProject(${p.id})`);
             
+            renderEstimateUI(p);
             switchTab('project-detail');
+        }
+
+        function renderEstimateUI(p) {
+            const emptyState = document.getElementById('estimate-empty-state');
+            const fileInfo = document.getElementById('estimate-file-info');
+            const fileName = document.getElementById('estimate-file-name');
+            const fileDate = document.getElementById('estimate-file-date');
+
+            if (p.estimate) {
+                emptyState.classList.add('hidden');
+                fileInfo.classList.remove('hidden');
+                fileName.innerText = p.estimate.name;
+                fileDate.innerText = `Загружено: ${p.estimate.date}`;
+            } else {
+                emptyState.classList.remove('hidden');
+                fileInfo.classList.add('hidden');
+                document.getElementById('estimate-file-input').value = '';
+            }
+        }
+
+        function uploadEstimate() {
+            if (!currentActiveProjId) return;
+            const fileInput = document.getElementById('estimate-file-input');
+            if (fileInput.files.length === 0) {
+                alert('Пожалуйста, выберите файл сметы');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                const estimateObj = {
+                    name: file.name,
+                    data: base64Data,
+                    date: new Date().toLocaleString()
+                };
+
+                let projects = JSON.parse(localStorage.getItem('rsk_projects'));
+                projects = projects.map(p => {
+                    if (p.id === currentActiveProjId) {
+                        p.estimate = estimateObj;
+                    }
+                    return p;
+                });
+
+                localStorage.setItem('rsk_projects', JSON.stringify(projects));
+                const updatedProj = projects.find(p => p.id === currentActiveProjId);
+                renderEstimateUI(updatedProj);
+                alert('Смета успешно загружена!');
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function viewEstimateFile() {
+            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const p = projects.find(item => item.id === currentActiveProjId);
+            if (!p || !p.estimate) return;
+
+            const win = window.open();
+            win.document.write(`
+                <html>
+                <head><title>Смета — ${p.name}</title></head>
+                <body style="margin:0; font-family:sans-serif; background:#f3f4f6; display:flex; flex-direction:column; height:100vh;">
+                    <div style="background:#15803d; color:white; padding:12px 20px; display:flex; justify-content:between; align-items:center;">
+                        <span style="font-weight:bold;">📄 Смета: ${p.estimate.name}</span>
+                        <a href="${p.estimate.data}" download="${p.estimate.name}" style="background:white; color:#15803d; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px;">Скачать файл</a>
+                    </div>
+                    <div style="flex:1; display:flex; justify-content:center; align-items:center; padding:20px;">
+                        ${p.estimate.data.startsWith('data:image') ? `<img src="${p.estimate.data}" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">` : 
+                          p.estimate.data.startsWith('data:application/pdf') ? `<iframe src="${p.estimate.data}" style="width:100%; height:100%; border:none;"></iframe>` : 
+                          `<div style="background:white; padding:30px; border-radius:8px; text-align:center; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+                              <p style="margin-bottom:15px; font-weight:bold;">Файл готов к просмотру / скачиванию</p>
+                              <a href="${p.estimate.data}" download="${p.estimate.name}" style="background:#15803d; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:bold;">Скачать ${p.estimate.name}</a>
+                          </div>`}
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+
+        function deleteEstimateFile() {
+            if (confirm('Удалить прикрепленную смету?')) {
+                let projects = JSON.parse(localStorage.getItem('rsk_projects'));
+                projects = projects.map(p => {
+                    if (p.id === currentActiveProjId) {
+                        p.estimate = null;
+                    }
+                    return p;
+                });
+                localStorage.setItem('rsk_projects', JSON.stringify(projects));
+                const updatedProj = projects.find(p => p.id === currentActiveProjId);
+                renderEstimateUI(updatedProj);
+            }
         }
 
         function saveProjectNotes() {
@@ -430,7 +549,7 @@
             const foreman = document.getElementById('new-proj-foreman').value;
 
             let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            projects.push({ id: Date.now(), name, foreman, notes: "" });
+            projects.push({ id: Date.now(), name, foreman, notes: "", estimate: null });
             localStorage.setItem('rsk_projects', JSON.stringify(projects));
 
             document.getElementById('new-proj-name').value = '';
