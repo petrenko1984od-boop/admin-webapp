@@ -107,7 +107,7 @@
                 <div class="border-t pt-4 space-y-3">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">📁 Разделы сметы (План / Факт)</h3>
-                        <span class="text-[11px] text-gray-400">Автоматически извлекается из Excel</span>
+                        <span class="text-[11px] text-gray-400">Нажмите на раздел, чтобы посмотреть детали закупки</span>
                     </div>
                     <div id="sections-container" class="space-y-3"></div>
                 </div>
@@ -179,9 +179,7 @@
                 <!-- БЛОК СТОИМОСТИ И СТАТУСА ПО ПОЗИЦИЯМ -->
                 <div class="space-y-2">
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">💰 Стоимость и статус расчетов по позициям:</label>
-                    <div id="modal-order-items-price-container" class="space-y-3 bg-gray-50 p-3 rounded-lg border">
-                        <!-- Динамические строки цен и статусов по позициям -->
-                    </div>
+                    <div id="modal-order-items-price-container" class="space-y-3 bg-gray-50 p-3 rounded-lg border"></div>
                 </div>
 
                 <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 flex justify-between items-center">
@@ -480,10 +478,7 @@
                                 name: rowText,
                                 planWorks: 0,
                                 planMaterials: 0,
-                                planTotal: 0,
-                                factWorks: 0,
-                                factMaterials: 0,
-                                factTotal: 0
+                                planTotal: 0
                             };
                             continue;
                         }
@@ -511,10 +506,7 @@
                             name: "Основной сметный расчет",
                             planWorks: 0,
                             planMaterials: 0,
-                            planTotal: 0,
-                            factWorks: 0,
-                            factMaterials: 0,
-                            factTotal: 0
+                            planTotal: 0
                         });
                     }
 
@@ -529,15 +521,11 @@
                         if (p.id === currentActiveProjId) {
                             p.estimate = estimateObj;
                             p.sections = sections.map(sec => {
-                                const existingSec = p.sections ? p.sections.find(s => s.name === sec.name) : null;
                                 return {
                                     name: sec.name,
                                     planWorks: sec.planWorks,
                                     planMaterials: sec.planMaterials,
-                                    planTotal: sec.planTotal,
-                                    factWorks: existingSec ? existingSec.factWorks : 0,
-                                    factMaterials: existingSec ? existingSec.factMaterials : 0,
-                                    factTotal: existingSec ? existingSec.factTotal : 0
+                                    planTotal: sec.planTotal
                                 };
                             });
                         }
@@ -559,6 +547,31 @@
             reader.readAsArrayBuffer(file);
         }
 
+        function getSectionFacts(projectName, sectionName) {
+            const orders = JSON.parse(localStorage.getItem('rsk_orders')) || [];
+            let factMaterials = 0;
+            let factWorks = 0;
+            let materialsList = [];
+            let worksList = [];
+
+            orders.forEach(o => {
+                if (o.project === projectName && o.section === sectionName && o.status === '🟢 Закрыта') {
+                    if (o.items && Array.isArray(o.items)) {
+                        o.items.forEach(it => {
+                            let price = typeof it === 'object' ? (parseFloat(it.price) || 0) : 0;
+                            let name = typeof it === 'object' ? it.name : it;
+                            let payment = typeof it === 'object' ? it.payment : 'Оплачено';
+                            
+                            factMaterials += price;
+                            materialsList.push({ name, price, payment, supplier: o.purchaseData ? o.purchaseData.supplier : 'Не указан' });
+                        });
+                    }
+                }
+            });
+
+            return { factMaterials, factWorks, materialsList, worksList };
+        }
+
         function renderSectionsUI(p) {
             const container = document.getElementById('sections-container');
             const totalsContainer = document.getElementById('card-proj-totals');
@@ -577,38 +590,76 @@
             let sumFactTotal = 0;
 
             container.innerHTML = p.sections.map((sec, idx) => {
+                const facts = getSectionFacts(p.name, sec.name);
+                let factTotal = facts.factWorks + facts.factMaterials;
+
                 sumPlanWorks += sec.planWorks;
                 sumPlanMat += sec.planMaterials;
                 sumPlanTotal += sec.planTotal;
-                sumFactWorks += sec.factWorks;
-                sumFactMat += sec.factMaterials;
-                sumFactTotal += sec.factTotal;
+                sumFactWorks += facts.factWorks;
+                sumFactMat += facts.factMaterials;
+                sumFactTotal += factTotal;
+
+                // Индикаторы превышения
+                const isMatOver = facts.factMaterials > sec.planMaterials;
+                const isWorkOver = facts.factWorks > sec.planWorks;
+
+                const matBadgeClass = isMatOver ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-[#15803d] border-emerald-100';
+                const workBadgeClass = isWorkOver ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-[#15803d] border-emerald-100';
+                
+                const matIndicator = isMatOver ? `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold ml-1">⚠️ Перерасход на ${(facts.factMaterials - sec.planMaterials).toLocaleString('ru-RU')} грн</span>` : `<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold ml-1">✔ В норме</span>`;
+                const workIndicator = isWorkOver ? `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold ml-1">⚠️ Перерасход на ${(facts.factWorks - sec.planWorks).toLocaleString('ru-RU')} грн</span>` : `<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold ml-1">✔ В норме</span>`;
+
+                // Формируем HTML для выпадающего списка деталей
+                let materialsHtml = facts.materialsList.length > 0 ? facts.materialsList.map(m => `
+                    <div class="flex justify-between items-center text-xs py-1.5 border-b border-gray-100 last:border-0">
+                        <div>
+                            <span class="font-semibold text-gray-800">📦 ${m.name}</span>
+                            <span class="text-[10px] text-gray-400 block">Поставщик: ${m.supplier} | Расчет: ${m.payment}</span>
+                        </div>
+                        <span class="font-bold text-[#15803d]">${m.price.toLocaleString('ru-RU')} грн</span>
+                    </div>
+                `).join('') : `<p class="text-xs text-gray-400 italic py-1">Нет закрытых закупок материалов по этому разделу</p>`;
 
                 return `
-                    <div class="border rounded-xl p-4 bg-gray-50 space-y-3">
-                        <div class="flex justify-between items-center border-b pb-2">
-                            <h4 class="font-bold text-[#166534] text-sm">📌 ${sec.name}</h4>
+                    <div class="border rounded-xl bg-gray-50 overflow-hidden transition shadow-sm">
+                        <!-- Кликабельная шапка раздела -->
+                        <div onclick="toggleSectionDetails(${idx})" class="p-4 cursor-pointer hover:bg-emerald-50/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                            <div class="flex items-center gap-2">
+                                <span id="section-arrow-${idx}" class="text-xs font-bold text-[#15803d] transition-transform">▼</span>
+                                <h4 class="font-bold text-[#166534] text-sm">📌 ${sec.name}</h4>
+                            </div>
+                            <div class="text-xs text-gray-500 flex gap-3">
+                                <span>План: <b>${sec.planTotal.toLocaleString('ru-RU')} грн</b></span>
+                                <span>Факт: <b class="${factTotal > sec.planTotal ? 'text-red-600' : 'text-[#15803d]'}">${factTotal.toLocaleString('ru-RU')} грн</b></span>
+                            </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+
+                        <!-- Основные блоки План / Факт -->
+                        <div class="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                             <div class="bg-white p-3 rounded-lg border space-y-1 shadow-sm">
                                 <p class="font-bold text-gray-500 uppercase tracking-wider text-[10px]">📊 План (из сметы)</p>
                                 <p>Работы: <strong class="text-gray-800">${sec.planWorks.toLocaleString('ru-RU')} грн</strong></p>
                                 <p>Материалы: <strong class="text-gray-800">${sec.planMaterials.toLocaleString('ru-RU')} грн</strong></p>
                                 <p class="pt-1 border-t text-sm">Итого план: <strong class="text-[#15803d]">${sec.planTotal.toLocaleString('ru-RU')} грн</strong></p>
                             </div>
-                            <div class="bg-emerald-50/60 p-3 rounded-lg border border-emerald-100 space-y-2">
-                                <p class="font-bold text-[#15803d] uppercase tracking-wider text-[10px]">💰 Факт (реально потрачено)</p>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-[10px] text-gray-600 mb-0.5">Факт работы:</label>
-                                        <input type="number" value="${sec.factWorks}" onchange="updateFactValue(${idx}, 'factWorks', this.value)" class="w-full border rounded p-1 text-xs bg-white outline-none focus:ring-1 focus:ring-[#15803d]">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] text-gray-600 mb-0.5">Факт материалы:</label>
-                                        <input type="number" value="${sec.factMaterials}" onchange="updateFactValue(${idx}, 'factMaterials', this.value)" class="w-full border rounded p-1 text-xs bg-white outline-none focus:ring-1 focus:ring-[#15803d]">
-                                    </div>
+                            
+                            <div class="p-3 rounded-lg border space-y-2 ${matBadgeClass}">
+                                <div class="flex justify-between items-center">
+                                    <p class="font-bold uppercase tracking-wider text-[10px]">💰 Факт (из снабжения)</p>
+                                    ${matIndicator}
                                 </div>
-                                <p class="pt-1 border-t border-emerald-200 text-sm">Итого факт: <strong class="text-[#166534]">${sec.factTotal.toLocaleString('ru-RU')} грн</strong></p>
+                                <p>Факт работы: <strong class="text-gray-800">${facts.factWorks.toLocaleString('ru-RU')} грн</strong> ${workIndicator}</p>
+                                <p>Факт материалы: <strong class="text-gray-800">${facts.factMaterials.toLocaleString('ru-RU')} грн</strong></p>
+                                <p class="pt-1 border-t border-emerald-200 text-sm">Итого факт: <strong class="${factTotal > sec.planTotal ? 'text-red-600' : 'text-[#166534]'}">${factTotal.toLocaleString('ru-RU')} грн</strong></p>
+                            </div>
+                        </div>
+
+                        <!-- Раскрывающийся блок детализации закупленных материалов -->
+                        <div id="section-details-${idx}" class="hidden bg-white border-t p-4 space-y-2">
+                            <p class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-1">🛒 Детализация закупленных материалов:</p>
+                            <div class="space-y-1">
+                                ${materialsHtml}
                             </div>
                         </div>
                     </div>
@@ -618,20 +669,16 @@
             totalsContainer.innerText = `Смета: ${sumPlanTotal.toLocaleString('ru-RU')} грн | Работы (План/Факт): ${sumPlanWorks.toLocaleString('ru-RU')} / ${sumFactWorks.toLocaleString('ru-RU')} грн | Матер. (План/Факт): ${sumPlanMat.toLocaleString('ru-RU')} / ${sumFactMat.toLocaleString('ru-RU')} грн`;
         }
 
-        function updateFactValue(sectionIndex, field, value) {
-            let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            projects = projects.map(p => {
-                if (p.id === currentActiveProjId) {
-                    let sec = p.sections[sectionIndex];
-                    sec[field] = parseFloat(value) || 0;
-                    sec.factTotal = sec.factWorks + sec.factMaterials;
-                }
-                return p;
-            });
-
-            localStorage.setItem('rsk_projects', JSON.stringify(projects));
-            const updatedProj = projects.find(p => p.id === currentActiveProjId);
-            renderSectionsUI(updatedProj);
+        function toggleSectionDetails(idx) {
+            const detailsEl = document.getElementById(`section-details-${idx}`);
+            const arrowEl = document.getElementById(`section-arrow-${idx}`);
+            if (detailsEl.classList.contains('hidden')) {
+                detailsEl.classList.remove('hidden');
+                arrowEl.style.transform = 'rotate(180deg)';
+            } else {
+                detailsEl.classList.add('hidden');
+                arrowEl.style.transform = 'rotate(0deg)';
+            }
         }
 
         function viewEstimateFile() {
@@ -945,14 +992,11 @@
 
                 let itemsHtml = '';
                 if (o.items && Array.isArray(o.items)) {
-                    // Поддерживаем как старый формат строк, так и новый объект с позициями
                     itemsHtml = o.items.map(it => {
-                        let text = typeof it === 'string' ? it : `${it.name} — ${it.price} грн (${it.payment})`;
+                        let text = typeof it === 'string' ? it : `${it.name} — ${it.price} грн`;
                         let paymentBadge = typeof it === 'object' && it.payment ? `<span class="text-[10px] ml-2 px-1.5 py-0.5 rounded ${it.payment.includes('Оплачено') ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}">${it.payment}</span>` : '';
                         return `<div class="text-gray-800 flex items-center justify-between py-0.5 border-b border-gray-100 last:border-0"><span>📦 <b>${text}</b></span> ${paymentBadge}</div>`;
                     }).join('');
-                } else if (o.material) {
-                    itemsHtml = `<div class="text-gray-800">📦 <b>${o.material}</b> — <span class="text-[#15803d] font-semibold">${o.quantity}</span></div>`;
                 }
 
                 let purchaseInfo = '';
@@ -1013,17 +1057,14 @@
             document.getElementById('modal-order-id').value = id;
             document.getElementById('modal-order-supplier').value = '';
 
-            // Генерируем поля ввода стоимости и статуса для КАЖДОЙ позиции заявки
             const container = document.getElementById('modal-order-items-price-container');
             let itemsList = [];
             if (order.items && Array.isArray(order.items)) {
                 itemsList = order.items;
-            } else if (order.material) {
-                itemsList = [`${order.material} — ${order.quantity}`];
             }
 
             container.innerHTML = itemsList.map((itemText, idx) => {
-                let cleanName = typeof itemText === 'string' ? itemText : itemText.name;
+                let cleanName = typeof itemText === 'string' ? itemText : itemText;
                 return `
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-white p-3 rounded-lg border">
                         <span class="text-xs text-gray-800 font-semibold flex-1">📦 ${cleanName}</span>
@@ -1072,7 +1113,6 @@
                 const payment = paymentSelects[index].value;
                 totalSum += price;
 
-                // Получаем оригинальное название позиции из элемента
                 const parentRow = input.closest('.flex');
                 const nameSpan = parentRow.querySelector('span');
                 let itemName = nameSpan ? nameSpan.innerText.replace('📦 ', '') : `Позиция ${index + 1}`;
@@ -1090,29 +1130,13 @@
             if (!targetOrder) return;
 
             targetOrder.status = "🟢 Закрыта";
-            targetOrder.items = updatedItemsList; // Сохраняем расширенный список с ценой и статусом для каждой позиции
+            targetOrder.items = updatedItemsList;
             targetOrder.purchaseData = { sum: totalSum, supplier };
             localStorage.setItem('rsk_orders', JSON.stringify(orders));
 
-            // Автоматически добавляем сумму в Факт материалы объекта
-            let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            projects = projects.map(proj => {
-                if (proj.name === targetOrder.project && proj.sections) {
-                    proj.sections = proj.sections.map(sec => {
-                        if (sec.name === targetOrder.section) {
-                            sec.factMaterials += totalSum;
-                            sec.factTotal = sec.factWorks + sec.factMaterials;
-                        }
-                        return sec;
-                    });
-                }
-                return proj;
-            });
-            localStorage.setItem('rsk_projects', JSON.stringify(projects));
-
             closeModalCloseOrder();
             renderOrders();
-            alert(`Закупка успешно проведена! Общая сумма ${totalSum.toLocaleString('ru-RU')} грн автоматически добавлена в «Факт материалы» раздела «${targetOrder.section}» объекта «${targetOrder.project}».`);
+            alert(`Закупка успешно проведена! Сумма ${totalSum.toLocaleString('ru-RU')} грн учтена в факте раздела «${targetOrder.section}» объекта «${targetOrder.project}».`);
         }
 
         function deleteOrder(id) {
