@@ -3,195 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RSK Odessa — Управление снабжением</title>
-    <!-- Подключаем Tailwind CSS -->
+    <title>RSK Odessa — Управление строительством</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen">
 
-    <!-- Шапка приложения -->
+    <!-- Шапка навигации -->
     <header class="bg-blue-900 text-white shadow-md">
-        <div class="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
-            <h1 class="text-xl font-bold tracking-wide">🏗 RSK Odessa — Снабжение</h1>
-            <div class="flex gap-2 mt-2 sm:mt-0">
-                <button onclick="switchTab('create')" id="btn-create" class="px-4 py-2 bg-blue-700 rounded-lg text-sm font-semibold transition shadow">➕ Новая заявка</button>
-                <button onclick="switchTab('supply')" id="btn-supply" class="px-4 py-2 bg-blue-800 hover:bg-blue-700 rounded-lg text-sm font-semibold transition shadow">📦 Снабжение (<span id="orders-count">0</span>)</button>
+        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wide">🏗 RSK Odessa — Управление проектами</h1>
+            <div class="flex gap-2 mt-3 sm:mt-0">
+                <button onclick="switchTab('projects')" id="btn-projects" class="px-3 py-2 bg-blue-700 rounded-lg text-xs sm:text-sm font-semibold transition shadow">🏗 Объекты</button>
+                <button onclick="switchTab('orders')" id="btn-orders" class="px-3 py-2 bg-blue-800 hover:bg-blue-700 rounded-lg text-xs sm:text-sm font-semibold transition shadow">📦 Снабжение (<span id="orders-badge">0</span>)</button>
+                <button onclick="switchTab('new-order')" id="btn-new-order" class="px-3 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-xs sm:text-sm font-semibold transition shadow">➕ Новая заявка</button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto p-4 mt-2">
+    <main class="max-w-5xl mx-auto p-4 mt-2">
 
-        <!-- ВКЛАДКА 1: Создание заявки -->
-        <section id="tab-create" class="bg-white rounded-xl shadow-md p-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">📝 Оформление заявки на материалы</h2>
-            
-            <form id="material-form" onsubmit="submitOrder(event)" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Объект строительства:</label>
-                        <input type="text" id="proj-name" required placeholder="например, Ивановка" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Раздел / Этап работ:</label>
-                        <input type="text" id="sec-name" required placeholder="например, Электромонтажные работы" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
+        <!-- ВКЛАДКА 1: ОБЪЕКТЫ И СМЕТЫ -->
+        <section id="tab-projects" class="space-y-4">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm">
+                <h2 class="text-lg font-bold text-gray-800">📋 Активные объекты</h2>
+                <button onclick="openAddProjectModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow">➕ Добавить объект</button>
+            </div>
+            <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Сюда динамически рендерятся объекты -->
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА 2: СНАБЖЕНИЕ И КОНТРОЛЬ ЗАЯВОК -->
+        <section id="tab-orders" class="hidden bg-white rounded-xl shadow-md p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h2 class="text-lg font-bold text-gray-800">📦 Контроль заявок на материалы</h2>
+                <button onclick="clearOrders()" class="text-xs text-red-500 hover:underline">Очистить историю</button>
+            </div>
+            <div id="orders-container" class="space-y-3">
+                <!-- Сюда рендерятся заявки -->
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА 3: СОЗДАНИЕ ЗАЯВКИ -->
+        <section id="tab-new-order" class="hidden bg-white rounded-xl shadow-md p-6 max-w-xl mx-auto space-y-4">
+            <h2 class="text-lg font-bold text-gray-800 border-b pb-3">📝 Оформление заявки на закупку</h2>
+            <form onsubmit="submitMaterialOrder(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Объект:</label>
+                    <select id="order-proj" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                        <!-- Заполняется динамически -->
+                    </select>
                 </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Раздел сметы / Этап:</label>
+                    <input type="text" id="order-section" required placeholder="например, Электрика / Фундамент" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Наименование материала:</label>
-                        <input type="text" id="mat-name" required placeholder="например, Кабель ВВГнг 3х2.5" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="text" id="order-mat" required placeholder="Кабель ВВГнг 3х2.5" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Количество и ед. измерения:</label>
-                        <input type="text" id="mat-qty" required placeholder="например, 100 м" class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Количество и ед.:</label>
+                        <input type="text" id="order-qty" required placeholder="100 м" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
-
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Желаемая дата поставки:</label>
-                    <input type="date" id="mat-date" required class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="date" id="order-date" required class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg text-sm transition shadow-md">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow">
                     ✅ Отправить заявку в снабжение
                 </button>
             </form>
         </section>
 
-        <!-- ВКЛАДКА 2: Отдел снабжения (Список заявок) -->
-        <section id="tab-supply" class="hidden bg-white rounded-xl shadow-md p-6">
-            <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 class="text-lg font-bold text-gray-800">📋 Контроль заявок снабжения</h2>
-                <button onclick="clearOrders()" class="text-xs text-red-500 hover:underline">Очистить историю</button>
-            </div>
-
-            <div id="orders-container" class="space-y-4">
-                <!-- Сюда динамически добавляются заявки -->
-            </div>
-        </section>
-
     </main>
 
+    <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ ОБЪЕКТА -->
+    <div id="project-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4">
+            <h3 class="text-lg font-bold text-gray-800">🏗 Добавить новый объект</h3>
+            <form onsubmit="saveNewProject(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Название объекта:</label>
+                    <input type="text" id="new-proj-name" required placeholder="например, Коттедж в Фонтанке" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Разделы сметы (через запятую):</label>
+                    <input type="text" id="new-proj-sections" required placeholder="Фундамент, Стены, Кровля, Электрика" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg text-sm transition">Сохранить</button>
+                    <button type="button" onclick="closeAddProjectModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 rounded-lg text-sm transition">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Установка текущей даты по умолчанию в поле даты
-        document.getElementById('mat-date').valueAsDate = new Date();
+        // Инициализация дефолтных данных, если в LocalStorage пусто
+        if (!localStorage.getItem('rsk_projects')) {
+            const defaultProjects = [
+                { id: 1, name: "Частный дом (Ивановка)", sections: ["Фундамент", "Коробка стен", "Кровля", "Инженерные сети"] },
+                { id: 2, name: "Реконструкция офиса", sections: ["Демонтаж", "Перегородки", "Чистовая отделка", "Электрика"] }
+            ];
+            localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
+        }
 
-        // Переключение между вкладками
-        function switchTab(tab) {
-            const createTab = document.getElementById('tab-create');
-            const supplyTab = document.getElementById('tab-supply');
-            const btnCreate = document.getElementById('btn-create');
-            const btnSupply = document.getElementById('btn-supply');
+        if (!localStorage.getItem('rsk_orders')) {
+            localStorage.setItem('rsk_orders', JSON.stringify([]));
+        }
 
-            if (tab === 'create') {
-                createTab.classList.remove('hidden');
-                supplyTab.classList.add('hidden');
-                btnCreate.classList.add('bg-blue-700');
-                btnCreate.classList.remove('bg-blue-800');
-                btnSupply.classList.add('bg-blue-800');
-                btnSupply.classList.remove('bg-blue-700');
-            } else {
-                createTab.classList.add('hidden');
-                supplyTab.classList.remove('hidden');
-                btnSupply.classList.add('bg-blue-700');
-                btnSupply.classList.remove('bg-blue-800');
-                btnCreate.classList.add('bg-blue-800');
-                btnCreate.classList.remove('bg-blue-700');
-                renderOrders();
+        document.getElementById('order-date').valueAsDate = new Date();
+
+        // Управление вкладками
+        function switchTab(tabId) {
+            ['projects', 'orders', 'new-order'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`btn-${t === 'new-order' ? 'new-order' : t}`).classList.replace('bg-blue-700', 'bg-blue-800');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`btn-${tabId === 'new-order' ? 'new-order' : tabId}`);
+            activeBtn.classList.replace('bg-blue-800', 'bg-blue-700');
+
+            if (tabId === 'projects') renderProjects();
+            if (tabId === 'orders') renderOrders();
+            if (tabId === 'new-order') updateProjectDropdown();
+        }
+
+        // Рендер проектов и смет
+        function renderProjects() {
+            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const container = document.getElementById('projects-container');
+            
+            if (projects.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-sm col-span-2 text-center py-6">Нет добавленных объектов</p>`;
+                return;
+            }
+
+            container.innerHTML = projects.map(p => `
+                <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-bold text-blue-900 text-base">🏗 ${p.name}</h3>
+                        <button onclick="deleteProject(${p.id})" class="text-red-400 hover:text-red-600 text-xs">🗑 Удалить</button>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-gray-500 mb-1">Разделы сметы:</p>
+                        <div class="flex flex-wrap gap-1">
+                            ${p.sections.map(s => `<span class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">${s}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Модальное окно объектов
+        function openAddProjectModal() { document.getElementById('project-modal').classList.remove('hidden'); }
+        function closeAddProjectModal() { document.getElementById('project-modal').classList.add('hidden'); }
+
+        function saveNewProject(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-proj-name').value.trim();
+            const sections = document.getElementById('new-proj-sections').value.split(',').map(s => s.trim()).filter(Boolean);
+
+            let projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            projects.push({ id: Date.now(), name, sections });
+            localStorage.setItem('rsk_projects', JSON.stringify(projects));
+
+            document.getElementById('new-proj-name').value = '';
+            document.getElementById('new-proj-sections').value = '';
+            closeAddProjectModal();
+            renderProjects();
+        }
+
+        function deleteProject(id) {
+            if (confirm('Удалить объект со всеми сметами?')) {
+                let projects = JSON.parse(localStorage.getItem('rsk_projects')).filter(p => p.id !== id);
+                localStorage.setItem('rsk_projects', JSON.stringify(projects));
+                renderProjects();
             }
         }
 
-        // Получение сохраненных заявок из LocalStorage
-        function getOrders() {
-            let orders = localStorage.getItem('rsk_orders');
-            return orders ? JSON.parse(orders) : [];
+        // Заполнение выпадающего списка объектов в форме заявки
+        function updateProjectDropdown() {
+            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const select = document.getElementById('order-proj');
+            select.innerHTML = projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
         }
 
-        // Сохранение заявки
-        function submitOrder(event) {
-            event.preventDefault();
-
+        // Создание заявки
+        function submitMaterialOrder(e) {
+            e.preventDefault();
             const newOrder = {
                 id: Date.now(),
-                project: document.getElementById('proj-name').value.trim(),
-                section: document.getElementById('sec-name').value.trim(),
-                material: document.getElementById('mat-name').value.trim(),
-                quantity: document.getElementById('mat-qty').value.trim(),
-                date: document.getElementById('mat-date').value,
+                project: document.getElementById('order-proj').value,
+                section: document.getElementById('order-section').value.trim(),
+                material: document.getElementById('order-mat').value.trim(),
+                quantity: document.getElementById('order-qty').value.trim(),
+                date: document.getElementById('order-date').value,
                 status: "🔴 Новая",
                 createdAt: new Date().toLocaleString()
             };
 
-            let orders = getOrders();
-            orders.unshift(newOrder); // добавляем в начало списка
+            let orders = JSON.parse(localStorage.getItem('rsk_orders'));
+            orders.unshift(newOrder);
             localStorage.setItem('rsk_orders', JSON.stringify(orders));
 
-            // Очищаем материал и количество, оставляя объект и раздел для удобства
-            document.getElementById('mat-name').value = '';
-            document.getElementById('mat-qty').value = '';
-            
+            document.getElementById('order-mat').value = '';
+            document.getElementById('order-qty').value = '';
             updateBadgeCount();
-            alert('✅ Заявка успешно создана и передана в снабжение!');
-            switchTab('supply');
+            alert('✅ Заявка успешно отправлена в снабжение!');
+            switchTab('orders');
         }
 
-        // Обновление счетчика в шапке
-        function updateBadgeCount() {
-            const orders = getOrders();
-            document.getElementById('orders-count').innerText = orders.length;
-        }
-
-        // Изменение статуса заявки
-        function updateStatus(id, newStatus) {
-            let orders = getOrders();
-            orders = orders.map(o => {
-                if (o.id === id) o.status = newStatus;
-                return o;
-            });
-            localStorage.setItem('rsk_orders', JSON.stringify(orders));
-            renderOrders();
-        }
-
-        // Удаление отдельной заявки
-        function deleteOrder(id) {
-            let orders = getOrders();
-            orders = orders.filter(o => o.id !== id);
-            localStorage.setItem('rsk_orders', JSON.stringify(orders));
-            renderOrders();
-            updateBadgeCount();
-        }
-
-        // Очистка всех заявок
-        function clearOrders() {
-            if (confirm('Вы уверены, что хотите удалить всю историю заявок?')) {
-                localStorage.removeItem('rsk_orders');
-                renderOrders();
-                updateBadgeCount();
-            }
-        }
-
-        // Отрисовка списка заявок на вкладке снабжения
+        // Рендер заявок
         function renderOrders() {
+            const orders = JSON.parse(localStorage.getItem('rsk_orders'));
             const container = document.getElementById('orders-container');
-            const orders = getOrders();
             updateBadgeCount();
 
             if (orders.length === 0) {
-                container.innerHTML = `<p class="text-center text-gray-400 py-8 text-sm">Активных заявок пока нет</p>`;
+                container.innerHTML = `<p class="text-center text-gray-400 py-6 text-sm">Активных заявок нет</p>`;
                 return;
             }
 
             container.innerHTML = orders.map(o => `
-                <div class="border rounded-xl p-4 shadow-sm bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div class="space-y-1 text-sm">
+                <div class="border rounded-xl p-3.5 bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-sm">
+                    <div class="space-y-1">
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-blue-900 text-base">🏗 ${o.project}</span>
+                            <span class="font-bold text-blue-900">🏗 ${o.project}</span>
                             <span class="text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-700">${o.section}</span>
                         </div>
-                        <p class="text-gray-800">📦 <b>${o.material}</b> — <span class="text-blue-600 font-semibold">${o.quantity}</span></p>
-                        <p class="text-xs text-gray-500">⏳ Срок поставки: <b>${o.date}</b> | Создано: ${o.createdAt}</p>
+                        <p>📦 <b>${o.material}</b> — <span class="text-blue-600 font-semibold">${o.quantity}</span></p>
+                        <p class="text-xs text-gray-500">⏳ Срок: <b>${o.date}</b> | Оформлено: ${o.createdAt}</p>
                         <div>
                             <span class="inline-block mt-1 px-2 py-0.5 text-xs font-bold rounded ${
                                 o.status === '🔴 Новая' ? 'bg-red-100 text-red-700' :
@@ -199,20 +245,50 @@
                             }">${o.status}</span>
                         </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-                        <select onchange="updateStatus(${o.id}, this.value)" class="border text-xs rounded p-1.5 bg-white outline-none">
+                    <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+                        <select onchange="updateOrderStatus(${o.id}, this.value)" class="border text-xs rounded p-1.5 bg-white outline-none">
                             <option value="🔴 Новая" ${o.status === '🔴 Новая' ? 'selected' : ''}>🔴 Новая</option>
                             <option value="🟡 В работе" ${o.status === '🟡 В работе' ? 'selected' : ''}>🟡 В работе</option>
                             <option value="🟢 Закуплено" ${o.status === '🟢 Закуплено' ? 'selected' : ''}>🟢 Закуплено</option>
                         </select>
-                        <button onclick="deleteOrder(${o.id})" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded bg-white">🗑 Удалить</button>
+                        <button onclick="deleteOrder(${o.id})" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded bg-white">🗑</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Инициализация счетчика при загрузке страницы
+        function updateOrderStatus(id, status) {
+            let orders = JSON.parse(localStorage.getItem('rsk_orders')).map(o => {
+                if (o.id === id) o.status = status;
+                return o;
+            });
+            localStorage.setItem('rsk_orders', JSON.stringify(orders));
+            renderOrders();
+        }
+
+        function deleteOrder(id) {
+            let orders = JSON.parse(localStorage.getItem('rsk_orders')).filter(o => o.id !== id);
+            localStorage.setItem('rsk_orders', JSON.stringify(orders));
+            renderOrders();
+            updateBadgeCount();
+        }
+
+        function clearOrders() {
+            if (confirm('Очистить всю историю заявок?')) {
+                localStorage.setItem('rsk_orders', JSON.stringify([]));
+                renderOrders();
+                updateBadgeCount();
+            }
+        }
+
+        function updateBadgeCount() {
+            const orders = JSON.parse(localStorage.getItem('rsk_orders'));
+            document.getElementById('orders-badge').innerText = orders.length;
+        }
+
+        // Первичный запуск счетчика
         updateBadgeCount();
+        renderProjects();
     </script>
 </body>
 </html>
