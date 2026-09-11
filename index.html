@@ -161,7 +161,7 @@
                     <table class="w-full text-left text-xs">
                         <thead class="bg-gray-100 text-gray-700 uppercase border-b font-semibold">
                             <tr>
-                                <th class="p-2.5">№ заявки</th>
+                                <th class="p-2.5">№</th>
                                 <th class="p-2.5">Дата</th>
                                 <th class="p-2.5">Наименование</th>
                                 <th class="p-2.5">Ед. изм.</th>
@@ -519,7 +519,7 @@
                         let payment = typeof it === 'object' ? (it.paymentStatus || 'Оплачено') : 'Оплачено';
                         
                         list.push({
-                            orderId: o.requestNumber || o.id, // Используем уникальный номер заявки
+                            orderId: o.requestNumber || o.id,
                             createdAt: o.createdAt || 'Н/Д',
                             date: o.date || '',
                             closedDate: o.purchaseData ? (o.purchaseData.closedDate || o.createdAt || 'Н/Д') : 'Н/Д',
@@ -592,7 +592,7 @@
 
                 return `
                     <tr onclick="openMaterialCard('${jsonStr}')" class="hover:bg-emerald-50/60 cursor-pointer transition">
-                        <td class="p-2.5 whitespace-nowrap font-mono font-bold text-[#15803d]">${item.orderId}</td>
+                        <td class="p-2.5 whitespace-nowrap font-bold text-gray-600">${index + 1}</td>
                         <td class="p-2.5 whitespace-nowrap">${item.date}</td>
                         <td class="p-2.5 font-semibold text-gray-900">${item.name}</td>
                         <td class="p-2.5 whitespace-nowrap">${item.unit}</td>
@@ -620,7 +620,7 @@
                 <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 space-y-2">
                     <div class="flex justify-between items-center border-b border-emerald-200 pb-2">
                         <span class="font-bold text-[#166534] text-sm">📦 ${item.name}</span>
-                        <span class="text-xs font-bold text-emerald-800 bg-emerald-200/60 px-2 py-0.5 rounded font-mono">${item.orderId}</span>
+                        <span class="text-xs font-bold text-emerald-800 bg-emerald-200/60 px-2 py-0.5 rounded font-mono">№ заявки: ${item.orderId}</span>
                     </div>
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <p><strong>Количество:</strong> ${item.qty} ${item.unit}</p>
@@ -660,8 +660,8 @@
                 return;
             }
 
-            const exportRows = data.map(item => ({
-                "Номер заявки": item.orderId,
+            const exportRows = data.map((item, index) => ({
+                "№": index + 1,
                 "Дата": item.date,
                 "Наименование": item.name,
                 "Ед. изм.": item.unit,
@@ -1281,12 +1281,11 @@
                 return;
             }
 
-            // Генерируем уникальный номер заявки (например, З-260912-4821)
             const uniqueRequestNumber = generateRequestNumber();
 
             const newOrder = {
                 id: Date.now(),
-                requestNumber: uniqueRequestNumber, // Сквозной номер
+                requestNumber: uniqueRequestNumber,
                 project: document.getElementById('order-proj').value,
                 section: sectionVal,
                 items: itemsList,
@@ -1319,7 +1318,7 @@
                 if (o.status === '🟡 В работе') statusBadgeClass = 'bg-yellow-100 text-yellow-700';
                 if (o.status === '🟢 Закрыта') statusBadgeClass = 'bg-green-100 text-green-700';
 
-                const reqNum = o.requestNumber || `З-${o.id}`; // Обратная совместимость для старых заявок
+                const reqNum = o.requestNumber || `З-${o.id}`;
 
                 let itemsHtml = '';
                 if (o.items && Array.isArray(o.items)) {
