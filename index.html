@@ -471,7 +471,7 @@
 
         function deleteOrder(id) {
             let orders = JSON.parse(localStorage.getItem('rsk_orders')).filter(o => o.id !== id);
-            localStorage.setItem('rsk_orders`, JSON.stringify(orders));
+            localStorage.setItem('rsk_orders', JSON.stringify(orders));
             renderOrders();
         }
 
@@ -484,11 +484,9 @@
 
         function updateOrdersBadgeCount() {
             const orders = JSON.parse(localStorage.getItem('rsk_orders'));
-            const tag = document.getElementById('orders-badge');
-            if (tag) tag.innerText = orders.length;
+            const badge = document.getElementById('orders-badge');
+            if (badge) badge.innerText = orders.length;
         }
-
-        function updateEmployeeBadgeCardCount() {} // заглушка
 
         function updateEmployeeBadgeCount() {
             const employees = JSON.parse(localStorage.getItem('rsk_employees'));
