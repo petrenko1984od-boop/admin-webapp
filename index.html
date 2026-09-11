@@ -5,17 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RSK Odessa — Управление строительством</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Подключаем библиотеку SheetJS для чтения Excel в браузере -->
+    <!-- Подключаем библиотеку SheetJS для чтения и записи Excel в браузере -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen">
 
     <!-- Шапка навигации -->
     <header class="bg-[#15803d] text-white shadow-md border-b-4 border-[#16a34a]">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div class="flex items-center gap-3">
                 <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center">
-                    <img src="logo.png" alt="RSK Logo" class="h-9 w-auto object-contain">
+                    <img src="logo.png" alt="RSK Logo" class="h-9 w-auto object-contain" onerror="this.style.display='none'">
                 </div>
                 <div>
                     <h1 class="text-base font-bold tracking-wide leading-tight">RSK Odessa</h1>
@@ -26,12 +26,13 @@
                 <button onclick="switchTab('projects')" id="btn-projects" class="px-3 py-2 bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">🏗 Объекты (<span id="projects-badge">0</span>)</button>
                 <button onclick="switchTab('employees')" id="btn-employees" class="px-3 py-2 bg-[#16a34a]/70 hover:bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">👥 Сотрудники (<span id="employees-badge">0</span>)</button>
                 <button onclick="switchTab('orders')" id="btn-orders" class="px-3 py-2 bg-[#16a34a]/70 hover:bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">📦 Снабжение (<span id="orders-badge">0</span>)</button>
+                <button onclick="switchTab('registry')" id="btn-registry" class="px-3 py-2 bg-[#16a34a]/70 hover:bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">📊 Реестр</button>
                 <button onclick="switchTab('new-order')" id="btn-new-order" class="px-3 py-2 bg-[#22c55e] hover:bg-[#15803d] text-white rounded-lg text-xs sm:text-sm font-semibold transition shadow">➕ Новая заявка</button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-5xl mx-auto p-4 mt-2">
+    <main class="max-w-6xl mx-auto p-4 mt-2">
 
         <!-- ВКЛАДКА 1: ОБЪЕКТЫ -->
         <section id="tab-projects" class="space-y-4">
@@ -107,7 +108,7 @@
                 <div class="border-t pt-4 space-y-3">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">📁 Разделы сметы (План / Факт)</h3>
-                        <span class="text-[11px] text-gray-400">Нажмите на раздел, чтобы посмотреть детали закупки</span>
+                        <span class="text-[11px] text-gray-400">Нажмите подробнее, чтобы посмотреть детали оплат</span>
                     </div>
                     <div id="sections-container" class="space-y-3"></div>
                 </div>
@@ -132,7 +133,75 @@
             <div id="orders-container" class="space-y-3"></div>
         </section>
 
-        <!-- ВКЛАДКА 4: НОВАЯ ЗАЯВКА -->
+        <!-- ВКЛАДКА 4: РЕЕСТР -->
+        <section id="tab-registry" class="hidden space-y-4">
+            <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-[#15803d] flex flex-wrap gap-2 items-center justify-between">
+                <h2 class="text-lg font-bold text-gray-800">📊 Сводные реестры</h2>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="switchRegistrySub('materials')" id="reg-btn-materials" class="px-3 py-1.5 bg-[#15803d] text-white rounded-lg text-xs font-semibold shadow transition">Реестр материалов</button>
+                    <button onclick="switchRegistrySub('works')" id="reg-btn-works" class="px-3 py-1.5 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg text-xs font-semibold shadow transition">Реестр работ</button>
+                    <button onclick="switchRegistrySub('deliveries')" id="reg-btn-deliveries" class="px-3 py-1.5 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg text-xs font-semibold shadow transition">Реестр доставок</button>
+                </div>
+            </div>
+
+            <!-- ПОДРАЗДЕЛ: РЕЕСТР МАТЕРИАЛОВ -->
+            <div id="reg-sub-materials" class="bg-white rounded-xl shadow-md p-6 space-y-4 border-t-4 border-[#15803d]">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
+                    <div>
+                        <h3 class="text-base font-bold text-gray-800">📦 Реестр закрытых материалов</h3>
+                        <p class="text-xs text-gray-500">Все материалы, прошедшие этап «Закрыта закупка» в снабжении.</p>
+                    </div>
+                    <button onclick="exportMaterialsToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition flex items-center gap-1">
+                        📥 Скачать в Excel
+                    </button>
+                </div>
+
+                <!-- ТАБЛИЦА С ФИЛЬТРАМИ -->
+                <div class="overflow-x-auto border rounded-xl">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-gray-100 text-gray-700 uppercase border-b font-semibold">
+                            <tr>
+                                <th class="p-2.5">Дата</th>
+                                <th class="p-2.5">Наименование</th>
+                                <th class="p-2.5">Ед. изм.</th>
+                                <th class="p-2.5">Кол-во</th>
+                                <th class="p-2.5">Цена за ед.</th>
+                                <th class="p-2.5">Сумма</th>
+                                <th class="p-2.5">Объект</th>
+                                <th class="p-2.5">Раздел</th>
+                            </tr>
+                            <tr class="bg-gray-50 border-t">
+                                <th class="p-1.5"><input type="text" id="flt-date" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5"><input type="text" id="flt-name" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5"><input type="text" id="flt-unit" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5"><input type="text" id="flt-qty" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5"><input type="text" id="flt-price" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5"><input type="text" id="flt-sum" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5"><input type="text" id="flt-proj" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5"><input type="text" id="flt-sec" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="registry-materials-tbody" class="divide-y">
+                            <!-- Данные генерируются динамически -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ПОДРАЗДЕЛ: РЕЕСТР РАБОТ -->
+            <div id="reg-sub-works" class="hidden bg-white rounded-xl shadow-md p-6 space-y-4 border-t-4 border-[#15803d]">
+                <h3 class="text-base font-bold text-gray-800 border-b pb-3">🛠 Реестр работ</h3>
+                <p class="text-xs text-gray-500">Раздел находится в разработке.</p>
+            </div>
+
+            <!-- ПОДРАЗДЕЛ: РЕЕСТР ДОСТАВОК -->
+            <div id="reg-sub-deliveries" class="hidden bg-white rounded-xl shadow-md p-6 space-y-4 border-t-4 border-[#15803d]">
+                <h3 class="text-base font-bold text-gray-800 border-b pb-3">🚚 Реестр доставок</h3>
+                <p class="text-xs text-gray-500">Раздел находится в разработке.</p>
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА 5: НОВАЯ ЗАЯВКА -->
         <section id="tab-new-order" class="hidden bg-white rounded-xl shadow-md p-6 max-w-xl mx-auto space-y-4 border-t-4 border-[#15803d]">
             <h2 class="text-lg font-bold text-gray-800 border-b pb-3">📝 Оформление заявки на закупку</h2>
             <form onsubmit="submitMaterialOrder(event)" class="space-y-4">
@@ -176,7 +245,6 @@
             <form onsubmit="confirmOrderPurchase(event)" class="space-y-3">
                 <input type="hidden" id="modal-order-id">
                 
-                <!-- БЛОК СТОИМОСТИ И СТАТУСА ПО ПОЗИЦИЯМ -->
                 <div class="space-y-2">
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">💰 Стоимость и статус расчетов по позициям:</label>
                     <div id="modal-order-items-price-container" class="space-y-3 bg-gray-50 p-3 rounded-lg border"></div>
@@ -318,7 +386,7 @@
         document.getElementById('order-date').valueAsDate = new Date();
 
         function switchTab(tabId) {
-            ['projects', 'project-detail', 'employees', 'orders', 'new-order'].forEach(t => {
+            ['projects', 'project-detail', 'employees', 'orders', 'registry', 'new-order'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 if (el) el.classList.add('hidden');
                 
@@ -351,10 +419,127 @@
             if (tabId === 'projects') renderProjects();
             if (tabId === 'employees') renderEmployees();
             if (tabId === 'orders') renderOrders();
+            if (tabId === 'registry') renderMaterialsRegistry();
             if (tabId === 'new-order') {
                 updateProjectDropdowns();
                 initOrderItems();
             }
+        }
+
+        function switchRegistrySub(subId) {
+            ['materials', 'works', 'deliveries'].forEach(s => {
+                const el = document.getElementById(`reg-sub-${s}`);
+                const btn = document.getElementById(`reg-btn-${s}`);
+                if (el) el.classList.add('hidden');
+                if (btn) {
+                    btn.className = "px-3 py-1.5 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg text-xs font-semibold shadow transition";
+                }
+            });
+
+            const targetEl = document.getElementById(`reg-sub-${subId}`);
+            const targetBtn = document.getElementById(`reg-btn-${subId}`);
+            if (targetEl) targetEl.classList.remove('hidden');
+            if (targetBtn) {
+                targetBtn.className = "px-3 py-1.5 bg-[#15803d] text-white rounded-lg text-xs font-semibold shadow transition";
+            }
+
+            if (subId === 'materials') renderMaterialsRegistry();
+        }
+
+        function getAllClosedMaterials() {
+            const orders = JSON.parse(localStorage.getItem('rsk_orders')) || [];
+            let list = [];
+            orders.forEach(o => {
+                if (o.status === '🟢 Закрыта' && o.items && Array.isArray(o.items)) {
+                    o.items.forEach(it => {
+                        let name = typeof it === 'object' ? it.name : it;
+                        let qty = typeof it === 'object' ? (it.qty || 1) : 1;
+                        let unit = typeof it === 'object' ? (it.unit || 'шт') : 'шт';
+                        let rawPrice = typeof it === 'object' ? (it.rawPrice || 0) : 0;
+                        let unitPrice = qty > 0 ? (rawPrice / qty) : 0;
+                        
+                        list.push({
+                            date: o.date || '',
+                            name: name,
+                            unit: unit,
+                            qty: qty,
+                            unitPrice: unitPrice,
+                            sum: rawPrice,
+                            project: o.project || '',
+                            section: o.section || ''
+                        });
+                    });
+                }
+            });
+            return list;
+        }
+
+        function renderMaterialsRegistry() {
+            const tbody = document.getElementById('registry-materials-tbody');
+            const data = getAllClosedMaterials();
+
+            // Значения фильтров
+            const fDate = document.getElementById('flt-date').value.toLowerCase();
+            const fName = document.getElementById('flt-name').value.toLowerCase();
+            const fUnit = document.getElementById('flt-unit').value.toLowerCase();
+            const fQty = document.getElementById('flt-qty').value.toLowerCase();
+            const fPrice = document.getElementById('flt-price').value.toLowerCase();
+            const fSum = document.getElementById('flt-sum').value.toLowerCase();
+            const fProj = document.getElementById('flt-proj').value.toLowerCase();
+            const fSec = document.getElementById('flt-sec').value.toLowerCase();
+
+            const filtered = data.filter(item => {
+                return String(item.date).toLowerCase().includes(fDate) &&
+                       String(item.name).toLowerCase().includes(fName) &&
+                       String(item.unit).toLowerCase().includes(fUnit) &&
+                       String(item.qty).toLowerCase().includes(fQty) &&
+                       String(item.unitPrice).toLowerCase().includes(fPrice) &&
+                       String(item.sum).toLowerCase().includes(fSum) &&
+                       String(item.project).toLowerCase().includes(fProj) &&
+                       String(item.section).toLowerCase().includes(fSec);
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-gray-400 py-6">Нет данных в реестре материалов</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-2.5 whitespace-nowrap">${item.date}</td>
+                    <td class="p-2.5 font-semibold text-gray-900">${item.name}</td>
+                    <td class="p-2.5 whitespace-nowrap">${item.unit}</td>
+                    <td class="p-2.5 whitespace-nowrap">${item.qty}</td>
+                    <td class="p-2.5 whitespace-nowrap">${item.unitPrice.toLocaleString('ru-RU')} грн</td>
+                    <td class="p-2.5 whitespace-nowrap font-bold text-[#15803d]">${item.sum.toLocaleString('ru-RU')} грн</td>
+                    <td class="p-2.5 whitespace-nowrap font-medium text-gray-800">${item.project}</td>
+                    <td class="p-2.5 whitespace-nowrap text-gray-600">${item.section}</td>
+                </tr>
+            `).join('');
+        }
+
+        function exportMaterialsToExcel() {
+            const data = getAllClosedMaterials();
+            if (data.length === 0) {
+                alert('Нет данных для выгрузки в Excel');
+                return;
+            }
+
+            const exportRows = data.map(item => ({
+                "Дата": item.date,
+                "Наименование": item.name,
+                "Ед. изм.": item.unit,
+                "Количество": item.qty,
+                "Цена за ед.": item.unitPrice,
+                "Сумма": item.sum,
+                "Объект": item.project,
+                "Раздел": item.section
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportRows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Реестр материалов");
+            XLSX.writeFile(workbook, "Reestr_Materialov_RSK.xlsx");
         }
 
         function renderProjects() {
@@ -551,7 +736,6 @@
             let factMaterials = 0;
             let factWorks = 0;
             let materialsList = [];
-            let worksList = [];
 
             orders.forEach(o => {
                 if (o.project === projectName && o.section === sectionName && o.status === '🟢 Закрыта') {
@@ -568,7 +752,7 @@
                 }
             });
 
-            return { factMaterials, factWorks, materialsList, worksList };
+            return { factMaterials, factWorks, materialsList };
         }
 
         function renderSectionsUI(p) {
@@ -586,7 +770,6 @@
             let sumPlanTotal = 0;
             let sumFactWorks = 0;
             let sumFactMat = 0;
-            let sumFactTotal = 0;
 
             container.innerHTML = p.sections.map((sec, idx) => {
                 const facts = getSectionFacts(p.name, sec.name);
@@ -597,7 +780,6 @@
                 sumPlanTotal += sec.planTotal;
                 sumFactWorks += facts.factWorks;
                 sumFactMat += facts.factMaterials;
-                sumFactTotal += factTotal;
 
                 const isMatOver = facts.factMaterials > sec.planMaterials;
                 const isWorkOver = facts.factWorks > sec.planWorks;
@@ -655,7 +837,7 @@
                         </div>
 
                         <div id="section-details-${idx}" class="hidden bg-white border-t p-4 space-y-2">
-                            <p class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-1">🛒 Детализация закупленных материалов:</p>
+                            <p class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-1">🛒 Детализация оплат и закупленных материалов:</p>
                             <div class="space-y-1">
                                 ${materialsHtml}
                             </div>
@@ -664,7 +846,7 @@
                 `;
             }).join('');
 
-            totalsContainer.innerText = `Смета: ${sumPlanTotal.toLocaleString('ru-RU')} грн | Работы (План/Факт): ${sumPlanWorks.toLocaleString('ru-RU')} / ${sumFactWorks.toLocaleString('ru-RU')} грн | Матер. (План/Факт): ${sumPlanMat.toLocaleString('ru-RU')} / ${sumFactMat.toLocaleString('ru-RU')} грн`;
+            totalsContainer.innerText = `Смета: ${sumPlanTotal.toLocaleString('ru-RU')} грн | Работы: ${sumPlanWorks.toLocaleString('ru-RU')} / ${sumFactWorks.toLocaleString('ru-RU')} грн | Материалы: ${sumPlanMat.toLocaleString('ru-RU')} / ${sumFactMat.toLocaleString('ru-RU')} грн`;
         }
 
         function toggleSectionDetails(idx) {
@@ -1072,10 +1254,6 @@
                         <span class="text-xs text-gray-800 font-semibold flex-1">📦 ${name} — <b>${qty} ${unit}</b></span>
                         <div class="flex items-center gap-2 w-full sm:w-auto">
                             <input type="number" step="0.01" placeholder="Цена за ед., грн" oninput="calculateModalTotal()" class="modal-item-price w-32 border rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-[#15803d]" required>
-                            <select class="modal-item-payment w-36 border rounded p-1.5 text-xs bg-white outline-none focus:ring-1 focus:ring-[#15803d]">
-                                <option value="✅ Оплачено">✅ Оплачено</option>
-                                <option value="⏳ В долг">⏳ В долг</option>
-                            </select>
                         </div>
                     </div>
                 `;
@@ -1114,7 +1292,6 @@
                 const qty = parseFloat(row.getAttribute('data-item-qty')) || 1;
                 const unit = row.getAttribute('data-item-unit');
                 const unitPrice = parseFloat(row.querySelector('.modal-item-price').value) || 0;
-                const payment = row.querySelector('.modal-item-payment').value;
                 
                 const itemTotalSum = qty * unitPrice;
                 totalSum += itemTotalSum;
@@ -1125,7 +1302,7 @@
                     unit: unit,
                     price: `${itemTotalSum.toLocaleString('ru-RU')} грн (${unitPrice} грн/${unit})`,
                     rawPrice: itemTotalSum,
-                    payment: payment
+                    payment: "✅ Оплачено"
                 });
             });
 
