@@ -1303,12 +1303,15 @@
             const container = document.getElementById('orders-container');
             updateOrdersBadgeCount();
 
-            if (orders.length === 0) {
+            // Фильтруем заявки: показываем все, кроме отправленных в архив
+            const activeOrders = orders.filter(o => o.status !== 'archived');
+
+            if (activeOrders.length === 0) {
                 container.innerHTML = `<p class="text-center text-gray-400 py-6 text-sm">Активных заявок нет</p>`;
                 return;
             }
 
-            container.innerHTML = orders.map(o => {
+            container.innerHTML = activeOrders.map(o => {
                 let statusBadgeClass = 'bg-red-100 text-red-700';
                 if (o.status === '🟡 В работе') statusBadgeClass = 'bg-yellow-100 text-yellow-700';
                 if (o.status === '🟢 Закрыта') statusBadgeClass = 'bg-green-100 text-green-700';
@@ -1316,15 +1319,20 @@
                 const reqNum = o.requestNumber || `З-${o.id}`;
 
                 let itemsHtml = '';
+                let hasDebt = false;
+
                 if (o.items && Array.isArray(o.items)) {
                     itemsHtml = o.items.map(it => {
                         let text = typeof it === 'object' && it.qty ? `${it.name} — ${it.qty} ${it.unit}` : it;
                         let pricePart = typeof it === 'object' && it.price ? ` (${it.price})` : '';
                         let paymentBadge = '';
                         if (typeof it === 'object' && it.paymentStatus) {
-                            paymentBadge = it.paymentStatus === 'В долг'
-                                ? `<span class="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">В долг</span>`
-                                : `<span class="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-bold">Оплачено</span>`;
+                            if (it.paymentStatus === 'В долг') {
+                                hasDebt = true;
+                                paymentBadge = `<span class="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">В долг</span>`;
+                            } else {
+                                paymentBadge = `<span class="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-bold">Оплачено</span>`;
+                            }
                         }
                         return `<div class="text-gray-800 flex items-center justify-between py-0.5 border-b border-gray-100 last:border-0"><span>📦 <b>${text}${pricePart}</b></span> ${paymentBadge}</div>`;
                     }).join('');
@@ -1339,6 +1347,10 @@
                         </div>
                     `;
                 }
+
+                // Условия для перемещения в архив: заявка полностью закрыта и полностью оплачена (без долга)
+                const isFullyClosed = (o.status === '🟢 Закрыта');
+                const canBeArchived = isFullyClosed && !hasDebt;
 
                 return `
                     <div class="border rounded-xl p-4 bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-sm">
@@ -1365,7 +1377,13 @@
                             ${o.status === '🟢 Закрыта' ? `
                                 <span class="text-xs text-green-700 font-bold bg-green-50 px-2 py-1 rounded border border-green-200">Завершено</span>
                             ` : ''}
-                            <button onclick="deleteOrder(${o.id})" class="text-red-500 hover:text-red-700 text-xs">🗑 Удалить</button>
+
+                            <!-- Замена удаления на кнопку Архива с проверкой условий -->
+                            ${canBeArchived ? `
+                                <button onclick="archiveOrder(${o.id})" class="text-emerald-700 hover:text-emerald-900 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition">📥 В архив</button>
+                            ` : `
+                                <button disabled class="text-gray-400 bg-gray-200 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-not-allowed" title="Архивация доступна только для полностью закрытых и полностью оплаченных заявок (без долгов)">📥 В архив</button>
+                            `}
                         </div>
                     </div>
                 `;
@@ -1379,6 +1397,19 @@
             });
             localStorage.setItem('rsk_orders', JSON.stringify(orders));
             renderOrders();
+        }
+
+        function archiveOrder(id) {
+            if (confirm('Перенести заявку в архив?')) {
+                let orders = JSON.parse(localStorage.getItem('rsk_orders')).map(o => {
+                    if (o.id === id) {
+                        o.status = 'archived';
+                    }
+                    return o;
+                });
+                localStorage.setItem('rsk_orders', JSON.stringify(orders));
+                renderOrders();
+            }
         }
 
         function openCloseOrderModal(id) {
@@ -1478,14 +1509,6 @@
             alert(`Закупка успешно проведена! Сумма ${totalSum.toLocaleString('ru-RU')} грн учтена в факте раздела «${targetOrder.section}» объекта «${targetOrder.project}».`);
         }
 
-        function deleteOrder(id) {
-            if (confirm('Удалить заявку?')) {
-                let orders = JSON.parse(localStorage.getItem('rsk_orders')).filter(o => o.id !== id);
-                localStorage.setItem('rsk_orders', JSON.stringify(orders));
-                renderOrders();
-            }
-        }
-
         function clearOrders() {
             if (confirm('Очистить историю?')) {
                 localStorage.setItem('rsk_orders', JSON.stringify([]));
@@ -1494,30 +1517,28 @@
         }
 
         function updateOrdersBadgeCount() {
-            const orders = JSON.parse(localStorage.getItem('rsk_orders'));
+            const orders = JSON.parse(localStorage.getItem('rsk_orders')) || [];
+            const activeOrders = orders.filter(o => o.status !== 'archived');
             const badge = document.getElementById('orders-badge');
-            if (badge) badge.innerText = orders.length;
-        }
-
-        function updateProjectBadgeCount() {
-            const projects = JSON.parse(localStorage.getItem('rsk_projects')) || [];
-            const badge = document.getElementById('projects-badge');
-            if (badge) badge.innerText = projects.length;
+            if (badge) badge.innerText = activeOrders.length;
         }
 
         function updateEmployeeBadgeCount() {
-            const employees = JSON.parse(localStorage.getItem('rsk_employees')) || [];
+            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
             const badge = document.getElementById('employees-badge');
             if (badge) badge.innerText = employees.length;
         }
 
-        // Первичная инициализация счетчиков при загрузке страницы
-        window.addEventListener('DOMContentLoaded', () => {
-            updateProjectBadgeCount();
-            updateEmployeeBadgeCount();
-            updateOrdersBadgeCount();
-            renderProjects();
-        });
+        function updateProjectBadgeCount() {
+            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const badge = document.getElementById('projects-badge');
+            if (badge) badge.innerText = projects.length;
+        }
+
+        updateOrdersBadgeCount();
+        updateEmployeeBadgeCount();
+        updateProjectBadgeCount();
+        renderProjects();
     </script>
 </body>
 </html>
