@@ -149,7 +149,7 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
                     <div>
                         <h3 class="text-base font-bold text-gray-800">📦 Реестр закрытых материалов</h3>
-                        <p class="text-xs text-gray-500">Все материалы, прошедшие этап «Закрыта закупка» в снабжении.</p>
+                        <p class="text-xs text-gray-500">Все материалы, прошедшие этап «Закрыта закупка» в снабжении. Нажмите на строку для просмотра подробной карточки.</p>
                     </div>
                     <button onclick="exportMaterialsToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition flex items-center gap-1">
                         📥 Скачать в Excel
@@ -260,6 +260,26 @@
         </section>
 
     </main>
+
+    <!-- МОДАЛЬНОЕ ОКНО ДЕТАЛЬНОЙ КАРТОЧКИ МАТЕРИАЛА -->
+    <div id="material-card-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border-t-4 border-[#15803d]">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-base font-bold text-gray-800 flex items-center gap-1.5">
+                    <span>📦</span> Карточка закупленного материала
+                </h3>
+                <button onclick="closeMaterialCardModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
+            </div>
+            
+            <div id="material-card-content" class="space-y-3 text-xs sm:text-sm">
+                <!-- Заполняется динамически -->
+            </div>
+
+            <div class="pt-2 border-t flex justify-end">
+                <button onclick="closeMaterialCardModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-lg text-xs transition">Закрыть</button>
+            </div>
+        </div>
+    </div>
 
     <!-- МОДАЛЬНОЕ ОКНО ЗАКРЫТИЯ ЗАЯВКИ СНАБЖЕНЦЕМ -->
     <div id="close-order-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -477,17 +497,20 @@
             let list = [];
             orders.forEach(o => {
                 if (o.status === '🟢 Закрыта' && o.items && Array.isArray(o.items)) {
-                    let supplierName = o.purchaseData ? (o.purchaseData.supplier || '') : '';
+                    let supplierName = o.purchaseData ? (o.purchaseData.supplier || 'Не указан') : 'Не указан';
                     o.items.forEach(it => {
                         let name = typeof it === 'object' ? it.name : it;
                         let qty = typeof it === 'object' ? (it.qty || 1) : 1;
                         let unit = typeof it === 'object' ? (it.unit || 'шт') : 'шт';
                         let rawPrice = typeof it === 'object' ? (it.rawPrice || 0) : 0;
                         let unitPrice = qty > 0 ? (rawPrice / qty) : 0;
-                        let payment = typeof it === 'object' ? (it.paymentStatus || (it.payment && it.payment.includes('В долг') ? 'В долг' : 'Оплачено')) : 'Оплачено';
+                        let payment = typeof it === 'object' ? (it.paymentStatus || 'Оплачено') : 'Оплачено';
                         
                         list.push({
+                            orderId: o.id,
+                            createdAt: o.createdAt || 'Н/Д',
                             date: o.date || '',
+                            closedDate: o.purchaseData ? (o.purchaseData.closedDate || o.createdAt || 'Н/Д') : 'Н/Д',
                             name: name,
                             unit: unit,
                             qty: qty,
@@ -496,7 +519,8 @@
                             paymentStatus: payment,
                             supplier: supplierName,
                             project: o.project || '',
-                            section: o.section || ''
+                            section: o.section || '',
+                            status: o.status
                         });
                     });
                 }
@@ -508,7 +532,6 @@
             const tbody = document.getElementById('registry-materials-tbody');
             const data = getAllClosedMaterials();
 
-            // Заполняем выпадающие списки фильтров уникальными значениями
             const dates = [...new Set(data.map(item => item.date))].filter(Boolean).sort();
             const suppliers = [...new Set(data.map(item => item.supplier))].filter(Boolean).sort();
             const projects = [...new Set(data.map(item => item.project))].filter(Boolean).sort();
@@ -527,7 +550,6 @@
             updateSelectOptions('flt-proj', projects);
             updateSelectOptions('flt-sec', sections);
 
-            // Значения фильтров
             const fDate = document.getElementById('flt-date').value;
             const fPayment = document.getElementById('flt-payment').value;
             const fSupplier = document.getElementById('flt-supplier').value;
@@ -549,13 +571,16 @@
                 return;
             }
 
-            tbody.innerHTML = filtered.map(item => {
+            tbody.innerHTML = filtered.map((item, index) => {
                 const paymentBadge = item.paymentStatus === 'В долг' 
                     ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold text-[10px]">В долг</span>` 
                     : `<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold text-[10px]">Оплачено</span>`;
 
+                // Сохраняем данные во временный объект для карточки по индексу или передаем в функцию строку
+                const jsonStr = encodeURIComponent(JSON.stringify(item));
+
                 return `
-                    <tr class="hover:bg-gray-50">
+                    <tr onclick="openMaterialCard('${jsonStr}')" class="hover:bg-emerald-50/60 cursor-pointer transition">
                         <td class="p-2.5 whitespace-nowrap">${item.date}</td>
                         <td class="p-2.5 font-semibold text-gray-900">${item.name}</td>
                         <td class="p-2.5 whitespace-nowrap">${item.unit}</td>
@@ -571,6 +596,51 @@
             }).join('');
         }
 
+        function openMaterialCard(encodedJson) {
+            const item = JSON.parse(decodeURIComponent(encodedJson));
+            const container = document.getElementById('material-card-content');
+
+            const paymentBadge = item.paymentStatus === 'В долг' 
+                ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">В долг</span>` 
+                : `<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold">Оплачено</span>`;
+
+            container.innerHTML = `
+                <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 space-y-2">
+                    <div class="flex justify-between items-center border-b border-emerald-200 pb-2">
+                        <span class="font-bold text-[#166534] text-sm">📦 ${item.name}</span>
+                        <span class="text-xs font-bold text-emerald-800 bg-emerald-200/60 px-2 py-0.5 rounded">Заявка № ${item.orderId}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <p><strong>Количество:</strong> ${item.qty} ${item.unit}</p>
+                        <p><strong>Цена за ед.:</strong> ${item.unitPrice.toLocaleString('ru-RU')} грн</p>
+                        <p class="col-span-2 text-sm pt-1"><strong>Общая сумма:</strong> <span class="text-[#15803d] font-bold text-base">${item.sum.toLocaleString('ru-RU')} грн</span></p>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-3 space-y-2 bg-gray-50 text-xs">
+                    <p class="font-bold text-gray-500 uppercase tracking-wider mb-1">🏗 Объект и привязка:</p>
+                    <p><strong>Объект:</strong> <span class="text-gray-900 font-semibold">${item.project}</span></p>
+                    <p><strong>Раздел сметы:</strong> <span class="text-gray-900 font-semibold">${item.section}</span></p>
+                </div>
+
+                <div class="border rounded-lg p-3 space-y-2 bg-gray-50 text-xs">
+                    <p class="font-bold text-gray-500 uppercase tracking-wider mb-1">🛒 Информация о закупке и доставке:</p>
+                    <p><strong>Статус закупки:</strong> <span class="text-green-700 font-bold">${item.status}</span></p>
+                    <p><strong>Поставщик / Магазин:</strong> <span class="text-gray-900 font-semibold">${item.supplier}</span></p>
+                    <p><strong>Статус оплаты:</strong> ${paymentBadge}</p>
+                    <p><strong>Дата создания заявки:</strong> ${item.createdAt}</p>
+                    <p><strong>Желаемая дата поставки:</strong> ${item.date}</p>
+                    <p><strong>Дата фактического закрытия:</strong> <span class="text-[#15803d] font-semibold">${item.closedDate}</span></p>
+                </div>
+            `;
+
+            document.getElementById('material-card-modal').classList.remove('hidden');
+        }
+
+        function closeMaterialCardModal() {
+            document.getElementById('material-card-modal').classList.add('hidden');
+        }
+
         function exportMaterialsToExcel() {
             const data = getAllClosedMaterials();
             if (data.length === 0) {
@@ -579,6 +649,7 @@
             }
 
             const exportRows = data.map(item => ({
+                "Номер заявки": item.orderId,
                 "Дата": item.date,
                 "Наименование": item.name,
                 "Ед. изм.": item.unit,
@@ -588,7 +659,8 @@
                 "Статус оплаты": item.paymentStatus,
                 "Поставщик": item.supplier,
                 "Объект": item.project,
-                "Раздел": item.section
+                "Раздел": item.section,
+                "Дата закрытия": item.closedDate
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(exportRows);
@@ -1356,6 +1428,7 @@
             const itemRows = document.querySelectorAll('.modal-item-row');
             let totalSum = 0;
             let updatedItemsList = [];
+            const closedTimestamp = new Date().toLocaleString();
 
             itemRows.forEach((row) => {
                 const name = row.getAttribute('data-item-name');
@@ -1384,7 +1457,7 @@
 
             targetOrder.status = "🟢 Закрыта";
             targetOrder.items = updatedItemsList;
-            targetOrder.purchaseData = { sum: totalSum, supplier };
+            targetOrder.purchaseData = { sum: totalSum, supplier, closedDate: closedTimestamp };
             localStorage.setItem('rsk_orders', JSON.stringify(orders));
 
             closeModalCloseOrder();
