@@ -23,7 +23,7 @@
             </div>
             <!-- Навигационные кнопки -->
             <div class="flex flex-wrap gap-2 items-center">
-                <button onclick="switchTab('projects')" id="btn-projects" class="px-3 py-2 bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">🏗 Объекты</button>
+                <button onclick="switchTab('projects')" id="btn-projects" class="px-3 py-2 bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">🏗 Объекты (<span id="projects-badge">0</span>)</button>
                 <button onclick="switchTab('employees')" id="btn-employees" class="px-3 py-2 bg-[#16a34a]/70 hover:bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">👥 Сотрудники (<span id="employees-badge">0</span>)</button>
                 <button onclick="switchTab('orders')" id="btn-orders" class="px-3 py-2 bg-[#16a34a]/70 hover:bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">📦 Снабжение (<span id="orders-badge">0</span>)</button>
                 <button onclick="switchTab('new-order')" id="btn-new-order" class="px-3 py-2 bg-[#22c55e] hover:bg-[#15803d] text-white rounded-lg text-xs sm:text-sm font-semibold transition shadow">➕ Новая заявка</button>
@@ -33,14 +33,14 @@
 
     <main class="max-w-5xl mx-auto p-4 mt-2">
 
-        <!-- ВКЛАДКА 1: ОБЪЕКТЫ И СМЕТЫ -->
+        <!-- ВКЛАДКА 1: ОБЪЕКТЫ -->
         <section id="tab-projects" class="space-y-4">
             <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border-l-4 border-[#15803d]">
                 <h2 class="text-lg font-bold text-gray-800">📋 Активные объекты</h2>
                 <button onclick="openAddProjectModal()" class="bg-[#15803d] hover:bg-[#166534] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition">➕ Добавить объект</button>
             </div>
             <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Сюда динамически рендерятся объекты -->
+                <!-- Сюда динамически рендерятся объекты-кнопки -->
             </div>
         </section>
 
@@ -73,7 +73,7 @@
                     <select id="order-proj" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]"></select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">Раздел сметы / Этап:</label>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Раздел / Этап:</label>
                     <input type="text" id="order-section" required placeholder="например, Электрика" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -111,15 +111,40 @@
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Ответственный прораб:</label>
                     <select id="new-proj-foreman" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]"></select>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">Разделы сметы (через запятую):</label>
-                    <input type="text" id="new-proj-sections" required placeholder="Фундамент, Стены, Кровля" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
-                </div>
                 <div class="flex gap-2 pt-2">
                     <button type="submit" class="flex-1 bg-[#15803d] hover:bg-[#166534] text-white font-semibold py-2 rounded-lg text-sm transition">Сохранить</button>
                     <button type="button" onclick="closeAddProjectModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 rounded-lg text-sm transition">Отмена</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО КАРТОЧКИ ОБЪЕКТА -->
+    <div id="project-card-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-lg max-w-lg w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-bold text-gray-800" id="card-proj-modal-title">🏗 Карточка объекта</h3>
+                <button onclick="closeProjectCardModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
+            </div>
+            
+            <div class="space-y-3 text-sm">
+                <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 space-y-1">
+                    <p><strong>Название:</strong> <span id="card-proj-name" class="text-gray-900 font-semibold"></span></p>
+                    <p><strong>Прораб:</strong> <span id="card-proj-foreman" class="text-gray-900 font-semibold"></span></p>
+                    <p><strong>Телефон:</strong> <a id="card-proj-phone-link" href="#" class="text-[#15803d] hover:underline font-semibold"></a></p>
+                </div>
+
+                <div class="border rounded-lg p-3 space-y-2 bg-gray-50">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">📌 Заметки по объекту:</p>
+                    <textarea id="card-proj-notes" placeholder="Адрес, состояние стройки, примечания..." class="w-full border rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-[#15803d] h-24 bg-white"></textarea>
+                    <button onclick="saveProjectNotes()" class="bg-[#15803d] hover:bg-[#166534] text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow">Сохранить заметки</button>
+                </div>
+            </div>
+
+            <div class="flex justify-between pt-2 border-t">
+                <button onclick="" id="card-proj-delete-btn" class="text-red-500 hover:text-red-700 text-xs font-semibold">🗑 Удалить объект</button>
+                <button onclick="closeProjectCardModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-lg text-xs transition">Закрыть</button>
+            </div>
         </div>
     </div>
 
@@ -185,7 +210,7 @@
     </div>
 
     <script>
-        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v3')) {
+        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v4')) {
             const defaultEmployees = [
                 { id: 1, name: "Иван Прорабов", position: "Прораб", phone: "+38 (050) 123-45-67", notes: "" },
                 { id: 2, name: "Петренко Сергей Николаевич", position: "Прораб", phone: "+380507016548", notes: "" },
@@ -194,11 +219,11 @@
             localStorage.setItem('rsk_employees', JSON.stringify(defaultEmployees));
 
             const defaultProjects = [
-                { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", sections: ["Фундамент", "Коробка стен", "Кровля", "Инженерные сети"] },
-                { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", sections: ["Демонтаж", "Перегородки", "Чистовая отделка", "Электрика"] }
+                { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", notes: "" },
+                { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", notes: "" }
             ];
             localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
-            localStorage.setItem('rsk_projects_v3', 'true');
+            localStorage.setItem('rsk_projects_v4', 'true');
         }
 
         if (!localStorage.getItem('rsk_orders')) {
@@ -234,6 +259,7 @@
             const projects = JSON.parse(localStorage.getItem('rsk_projects'));
             const employees = JSON.parse(localStorage.getItem('rsk_employees'));
             const container = document.getElementById('projects-container');
+            updateProjectBadgeCount();
             
             if (projects.length === 0) {
                 container.innerHTML = `<p class="text-gray-500 text-sm col-span-2 text-center py-6">Нет добавленных объектов</p>`;
@@ -245,24 +271,62 @@
                 const foremanPhone = foremanObj ? foremanObj.phone : '';
 
                 return `
-                    <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3 border-l-4 border-[#15803d]">
-                        <div class="flex justify-between items-start">
-                            <h3 class="font-bold text-[#166534] text-base">🏗 ${p.name}</h3>
-                            <button onclick="deleteProject(${p.id})" class="text-red-400 hover:text-red-600 text-xs">🗑 Удалить</button>
-                        </div>
-                        <div class="text-xs space-y-1 text-gray-600">
-                            <p><strong>👨‍💼 Прораб:</strong> <span class="text-gray-900 font-semibold">${p.foreman || 'Не назначен'}</span></p>
-                            ${foremanPhone ? `<p><strong>📞 Телефон:</strong> <a href="tel:${foremanPhone}" class="text-[#15803d] hover:underline font-semibold">${foremanPhone}</a></p>` : ''}
-                        </div>
-                        <div>
-                            <p class="text-xs font-semibold text-gray-500 mb-1">Разделы сметы:</p>
-                            <div class="flex flex-wrap gap-1">
-                                ${p.sections.map(s => `<span class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">${s}</span>`).join('')}
+                    <button onclick="openProjectCard(${p.id})" class="w-full text-left bg-white rounded-xl shadow-sm border p-4 flex flex-col justify-between space-y-3 border-l-4 border-[#15803d] hover:bg-emerald-50/50 transition cursor-pointer group">
+                        <div class="space-y-1 w-full">
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-bold text-[#166534] text-base group-hover:underline">🏗 ${p.name}</h3>
+                                <span class="text-xs text-[#15803d] bg-emerald-100 px-2 py-0.5 rounded font-semibold">Открыть карточку →</span>
                             </div>
+                            <p class="text-xs text-gray-600"><strong>👨‍💼 Прораб:</strong> <span class="text-gray-900 font-semibold">${p.foreman || 'Не назначен'}</span></p>
+                            ${foremanPhone ? `<p class="text-xs text-gray-600"><strong>📞 Телефон:</strong> <span class="text-[#15803d] font-semibold">${foremanPhone}</span></p>` : ''}
                         </div>
-                    </div>
+                    </button>
                 `;
             }).join('');
+        }
+
+        let currentActiveProjId = null;
+
+        function openProjectCard(id) {
+            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            const p = projects.find(item => item.id === id);
+            if (!p) return;
+
+            currentActiveProjId = id;
+            document.getElementById('card-proj-name').innerText = p.name;
+            document.getElementById('card-proj-foreman').innerText = p.foreman || 'Не назначен';
+            
+            const foremanObj = employees.find(e => e.name === p.foreman);
+            const phoneLink = document.getElementById('card-proj-phone-link');
+            if (foremanObj && foremanObj.phone) {
+                phoneLink.innerText = foremanObj.phone;
+                phoneLink.href = `tel:${foremanObj.phone}`;
+                phoneLink.parentElement.style.display = 'block';
+            } else {
+                phoneLink.parentElement.style.display = 'none';
+            }
+
+            document.getElementById('card-proj-notes').value = p.notes || '';
+            document.getElementById('card-proj-delete-btn').setAttribute('onclick', `deleteProject(${p.id}); closeProjectCardModal();`);
+            document.getElementById('project-card-modal').classList.remove('hidden');
+        }
+
+        function closeProjectCardModal() {
+            document.getElementById('project-card-modal').classList.add('hidden');
+            currentActiveProjId = null;
+        }
+
+        function saveProjectNotes() {
+            if (!currentActiveProjId) return;
+            const notes = document.getElementById('card-proj-notes').value;
+            let projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            projects = projects.map(p => {
+                if (p.id === currentActiveProjId) p.notes = notes;
+                return p;
+            });
+            localStorage.setItem('rsk_projects', JSON.stringify(projects));
+            alert('Заметки по объекту успешно сохранены!');
         }
 
         function renderEmployees() {
@@ -343,14 +407,12 @@
             e.preventDefault();
             const name = document.getElementById('new-proj-name').value.trim();
             const foreman = document.getElementById('new-proj-foreman').value;
-            const sections = document.getElementById('new-proj-sections').value.split(',').map(s => s.trim()).filter(Boolean);
 
             let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            projects.push({ id: Date.now(), name, foreman, sections });
+            projects.push({ id: Date.now(), name, foreman, notes: "" });
             localStorage.setItem('rsk_projects', JSON.stringify(projects));
 
             document.getElementById('new-proj-name').value = '';
-            document.getElementById('new-proj-sections').value = '';
             closeAddProjectModal();
             renderProjects();
         }
@@ -493,8 +555,15 @@
             if (badge) badge.innerText = employees.length;
         }
 
+        function updateProjectBadgeCount() {
+            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const badge = document.getElementById('projects-badge');
+            if (badge) badge.innerText = projects.length;
+        }
+
         updateOrdersBadgeCount();
         updateEmployeeBadgeCount();
+        updateProjectBadgeCount();
         renderProjects();
     </script>
 </body>
