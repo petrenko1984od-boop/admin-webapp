@@ -167,6 +167,7 @@
                                 <th class="p-2.5">Кол-во</th>
                                 <th class="p-2.5">Цена за ед.</th>
                                 <th class="p-2.5">Сумма</th>
+                                <th class="p-2.5">Статус оплаты</th>
                                 <th class="p-2.5">Объект</th>
                                 <th class="p-2.5">Раздел</th>
                             </tr>
@@ -177,6 +178,13 @@
                                 <th class="p-1.5"><input type="text" id="flt-qty" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
                                 <th class="p-1.5"><input type="text" id="flt-price" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
                                 <th class="p-1.5"><input type="text" id="flt-sum" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5">
+                                    <select id="flt-payment" onchange="renderMaterialsRegistry()" class="w-full border rounded p-1 text-[11px] font-normal bg-white outline-none">
+                                        <option value="">Все</option>
+                                        <option value="Оплачено">Оплачено</option>
+                                        <option value="В долг">В долг</option>
+                                    </select>
+                                </th>
                                 <th class="p-1.5"><input type="text" id="flt-proj" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
                                 <th class="p-1.5"><input type="text" id="flt-sec" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
                             </tr>
@@ -246,7 +254,7 @@
                 <input type="hidden" id="modal-order-id">
                 
                 <div class="space-y-2">
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">💰 Стоимость и статус расчетов по позициям:</label>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">💰 Стоимость, статус расчетов по позициям:</label>
                     <div id="modal-order-items-price-container" class="space-y-3 bg-gray-50 p-3 rounded-lg border"></div>
                 </div>
 
@@ -457,6 +465,7 @@
                         let unit = typeof it === 'object' ? (it.unit || 'шт') : 'шт';
                         let rawPrice = typeof it === 'object' ? (it.rawPrice || 0) : 0;
                         let unitPrice = qty > 0 ? (rawPrice / qty) : 0;
+                        let payment = typeof it === 'object' ? (it.paymentStatus || (it.payment && it.payment.includes('В долг') ? 'В долг' : 'Оплачено')) : 'Оплачено';
                         
                         list.push({
                             date: o.date || '',
@@ -465,6 +474,7 @@
                             qty: qty,
                             unitPrice: unitPrice,
                             sum: rawPrice,
+                            paymentStatus: payment,
                             project: o.project || '',
                             section: o.section || ''
                         });
@@ -485,11 +495,14 @@
             const fQty = document.getElementById('flt-qty').value.toLowerCase();
             const fPrice = document.getElementById('flt-price').value.toLowerCase();
             const fSum = document.getElementById('flt-sum').value.toLowerCase();
+            const fPayment = document.getElementById('flt-payment').value;
             const fProj = document.getElementById('flt-proj').value.toLowerCase();
             const fSec = document.getElementById('flt-sec').value.toLowerCase();
 
             const filtered = data.filter(item => {
-                return String(item.date).toLowerCase().includes(fDate) &&
+                const matchesPayment = !fPayment || item.paymentStatus === fPayment;
+                return matchesPayment &&
+                       String(item.date).toLowerCase().includes(fDate) &&
                        String(item.name).toLowerCase().includes(fName) &&
                        String(item.unit).toLowerCase().includes(fUnit) &&
                        String(item.qty).toLowerCase().includes(fQty) &&
@@ -500,22 +513,29 @@
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-gray-400 py-6">Нет данных в реестре материалов</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-gray-400 py-6">Нет данных в реестре материалов</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = filtered.map(item => `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-2.5 whitespace-nowrap">${item.date}</td>
-                    <td class="p-2.5 font-semibold text-gray-900">${item.name}</td>
-                    <td class="p-2.5 whitespace-nowrap">${item.unit}</td>
-                    <td class="p-2.5 whitespace-nowrap">${item.qty}</td>
-                    <td class="p-2.5 whitespace-nowrap">${item.unitPrice.toLocaleString('ru-RU')} грн</td>
-                    <td class="p-2.5 whitespace-nowrap font-bold text-[#15803d]">${item.sum.toLocaleString('ru-RU')} грн</td>
-                    <td class="p-2.5 whitespace-nowrap font-medium text-gray-800">${item.project}</td>
-                    <td class="p-2.5 whitespace-nowrap text-gray-600">${item.section}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = filtered.map(item => {
+                const paymentBadge = item.paymentStatus === 'В долг' 
+                    ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold text-[10px]">В долг</span>` 
+                    : `<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold text-[10px]">Оплачено</span>`;
+
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-2.5 whitespace-nowrap">${item.date}</td>
+                        <td class="p-2.5 font-semibold text-gray-900">${item.name}</td>
+                        <td class="p-2.5 whitespace-nowrap">${item.unit}</td>
+                        <td class="p-2.5 whitespace-nowrap">${item.qty}</td>
+                        <td class="p-2.5 whitespace-nowrap">${item.unitPrice.toLocaleString('ru-RU')} грн</td>
+                        <td class="p-2.5 whitespace-nowrap font-bold text-[#15803d]">${item.sum.toLocaleString('ru-RU')} грн</td>
+                        <td class="p-2.5 whitespace-nowrap">${paymentBadge}</td>
+                        <td class="p-2.5 whitespace-nowrap font-medium text-gray-800">${item.project}</td>
+                        <td class="p-2.5 whitespace-nowrap text-gray-600">${item.section}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function exportMaterialsToExcel() {
@@ -532,6 +552,7 @@
                 "Количество": item.qty,
                 "Цена за ед.": item.unitPrice,
                 "Сумма": item.sum,
+                "Статус оплаты": item.paymentStatus,
                 "Объект": item.project,
                 "Раздел": item.section
             }));
@@ -743,10 +764,10 @@
                         o.items.forEach(it => {
                             let price = typeof it === 'object' ? (parseFloat(it.rawPrice) || parseFloat(it.price) || 0) : 0;
                             let name = typeof it === 'object' ? it.name : it;
-                            let payment = typeof it === 'object' ? it.payment : 'Оплачено';
+                            let paymentStatus = typeof it === 'object' ? (it.paymentStatus || 'Оплачено') : 'Оплачено';
                             
                             factMaterials += price;
-                            materialsList.push({ name, price, payment, supplier: o.purchaseData ? o.purchaseData.supplier : 'Не указан' });
+                            materialsList.push({ name, price, paymentStatus, supplier: o.purchaseData ? o.purchaseData.supplier : 'Не указан' });
                         });
                     }
                 }
@@ -789,15 +810,21 @@
                 const matIndicator = isMatOver ? `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold ml-1">⚠️ Перерасход на ${(facts.factMaterials - sec.planMaterials).toLocaleString('ru-RU')} грн</span>` : `<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold ml-1">✔ В норме</span>`;
                 const workIndicator = isWorkOver ? `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold ml-1">⚠️ Перерасход на ${(facts.factWorks - sec.planWorks).toLocaleString('ru-RU')} грн</span>` : `<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold ml-1">✔ В норме</span>`;
 
-                let materialsHtml = facts.materialsList.length > 0 ? facts.materialsList.map(m => `
-                    <div class="flex justify-between items-center text-xs py-1.5 border-b border-gray-100 last:border-0">
-                        <div>
-                            <span class="font-semibold text-gray-800">📦 ${m.name}</span>
-                            <span class="text-[10px] text-gray-400 block">Поставщик: ${m.supplier} | Расчет: ${m.payment}</span>
+                let materialsHtml = facts.materialsList.length > 0 ? facts.materialsList.map(m => {
+                    const payBadge = m.paymentStatus === 'В долг' 
+                        ? `<span class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">В долг</span>` 
+                        : `<span class="text-[9px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded font-bold">Оплачено</span>`;
+
+                    return `
+                        <div class="flex justify-between items-center text-xs py-1.5 border-b border-gray-100 last:border-0">
+                            <div>
+                                <span class="font-semibold text-gray-800">📦 ${m.name}</span>
+                                <span class="text-[10px] text-gray-400 block">Поставщик: ${m.supplier} | ${payBadge}</span>
+                            </div>
+                            <span class="font-bold text-[#15803d]">${m.price.toLocaleString('ru-RU')} грн</span>
                         </div>
-                        <span class="font-bold text-[#15803d]">${m.price.toLocaleString('ru-RU')} грн</span>
-                    </div>
-                `).join('') : `<p class="text-xs text-gray-400 italic py-1">Нет закрытых закупок материалов по этому разделу</p>`;
+                    `;
+                }).join('') : `<p class="text-xs text-gray-400 italic py-1">Нет закрытых закупок материалов по этому разделу</p>`;
 
                 return `
                     <div class="border rounded-xl bg-gray-50 overflow-hidden transition shadow-sm">
@@ -1175,7 +1202,12 @@
                     itemsHtml = o.items.map(it => {
                         let text = typeof it === 'object' && it.qty ? `${it.name} — ${it.qty} ${it.unit}` : it;
                         let pricePart = typeof it === 'object' && it.price ? ` (${it.price})` : '';
-                        let paymentBadge = typeof it === 'object' && it.payment ? `<span class="text-[10px] ml-2 px-1.5 py-0.5 rounded ${it.payment.includes('Оплачено') ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}">${it.payment}</span>` : '';
+                        let paymentBadge = '';
+                        if (typeof it === 'object' && it.paymentStatus) {
+                            paymentBadge = it.paymentStatus === 'В долг'
+                                ? `<span class="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">В долг</span>`
+                                : `<span class="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-bold">Оплачено</span>`;
+                        }
                         return `<div class="text-gray-800 flex items-center justify-between py-0.5 border-b border-gray-100 last:border-0"><span>📦 <b>${text}${pricePart}</b></span> ${paymentBadge}</div>`;
                     }).join('');
                 }
@@ -1253,7 +1285,11 @@
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-white p-3 rounded-lg border modal-item-row" data-item-name="${name}" data-item-qty="${qty}" data-item-unit="${unit}">
                         <span class="text-xs text-gray-800 font-semibold flex-1">📦 ${name} — <b>${qty} ${unit}</b></span>
                         <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <input type="number" step="0.01" placeholder="Цена за ед., грн" oninput="calculateModalTotal()" class="modal-item-price w-32 border rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-[#15803d]" required>
+                            <input type="number" step="0.01" placeholder="Цена за ед., грн" oninput="calculateModalTotal()" class="modal-item-price w-28 border rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-[#15803d]" required>
+                            <select class="modal-item-payment w-28 border rounded p-1.5 text-xs bg-white outline-none focus:ring-1 focus:ring-[#15803d]">
+                                <option value="Оплачено">Оплачено</option>
+                                <option value="В долг">В долг</option>
+                            </select>
                         </div>
                     </div>
                 `;
@@ -1292,6 +1328,7 @@
                 const qty = parseFloat(row.getAttribute('data-item-qty')) || 1;
                 const unit = row.getAttribute('data-item-unit');
                 const unitPrice = parseFloat(row.querySelector('.modal-item-price').value) || 0;
+                const paymentStatus = row.querySelector('.modal-item-payment').value;
                 
                 const itemTotalSum = qty * unitPrice;
                 totalSum += itemTotalSum;
@@ -1302,7 +1339,7 @@
                     unit: unit,
                     price: `${itemTotalSum.toLocaleString('ru-RU')} грн (${unitPrice} грн/${unit})`,
                     rawPrice: itemTotalSum,
-                    payment: "✅ Оплачено"
+                    paymentStatus: paymentStatus
                 });
             });
 
