@@ -1303,7 +1303,6 @@
             const container = document.getElementById('orders-container');
             updateOrdersBadgeCount();
 
-            // Фильтруем заявки: показываем все, кроме отправленных в архив
             const activeOrders = orders.filter(o => o.status !== 'archived');
 
             if (activeOrders.length === 0) {
@@ -1348,7 +1347,6 @@
                     `;
                 }
 
-                // Условия для перемещения в архив: заявка полностью закрыта и полностью оплачена (без долга)
                 const isFullyClosed = (o.status === '🟢 Закрыта');
                 const canBeArchived = isFullyClosed && !hasDebt;
 
@@ -1378,7 +1376,6 @@
                                 <span class="text-xs text-green-700 font-bold bg-green-50 px-2 py-1 rounded border border-green-200">Завершено</span>
                             ` : ''}
 
-                            <!-- Замена удаления на кнопку Архива с проверкой условий -->
                             ${canBeArchived ? `
                                 <button onclick="archiveOrder(${o.id})" class="text-emerald-700 hover:text-emerald-900 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition">📥 В архив</button>
                             ` : `
@@ -1542,3 +1539,4 @@
     </script>
 </body>
 </html>
+```[cite: 6]
