@@ -173,7 +173,11 @@
                                 <th class="p-2.5">Раздел</th>
                             </tr>
                             <tr class="bg-gray-50 border-t">
-                                <th class="p-1.5"><input type="text" id="flt-date" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5">
+                                    <select id="flt-date" onchange="renderMaterialsRegistry()" class="w-full border rounded p-1 text-[11px] font-normal bg-white outline-none">
+                                        <option value="">Все</option>
+                                    </select>
+                                </th>
                                 <th class="p-1.5"><input type="text" id="flt-name" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
                                 <th class="p-1.5"><input type="text" id="flt-unit" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
                                 <th class="p-1.5"><input type="text" id="flt-qty" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
@@ -186,9 +190,21 @@
                                         <option value="В долг">В долг</option>
                                     </select>
                                 </th>
-                                <th class="p-1.5"><input type="text" id="flt-supplier" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
-                                <th class="p-1.5"><input type="text" id="flt-proj" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
-                                <th class="p-1.5"><input type="text" id="flt-sec" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5">
+                                    <select id="flt-supplier" onchange="renderMaterialsRegistry()" class="w-full border rounded p-1 text-[11px] font-normal bg-white outline-none">
+                                        <option value="">Все</option>
+                                    </select>
+                                </th>
+                                <th class="p-1.5">
+                                    <select id="flt-proj" onchange="renderMaterialsRegistry()" class="w-full border rounded p-1 text-[11px] font-normal bg-white outline-none">
+                                        <option value="">Все</option>
+                                    </select>
+                                </th>
+                                <th class="p-1.5">
+                                    <select id="flt-sec" onchange="renderMaterialsRegistry()" class="w-full border rounded p-1 text-[11px] font-normal bg-white outline-none">
+                                        <option value="">Все</option>
+                                    </select>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="registry-materials-tbody" class="divide-y">
@@ -492,30 +508,50 @@
             const tbody = document.getElementById('registry-materials-tbody');
             const data = getAllClosedMaterials();
 
+            // Заполняем выпадающие списки фильтров уникальными значениями
+            const dates = [...new Set(data.map(item => item.date))].filter(Boolean).sort();
+            const suppliers = [...new Set(data.map(item => item.supplier))].filter(Boolean).sort();
+            const projects = [...new Set(data.map(item => item.project))].filter(Boolean).sort();
+            const sections = [...new Set(data.map(item => item.section))].filter(Boolean).sort();
+
+            function updateSelectOptions(selectId, values) {
+                const sel = document.getElementById(selectId);
+                if (!sel) return;
+                const currentVal = sel.value;
+                sel.innerHTML = `<option value="">Все</option>` + values.map(v => `<option value="${v}">${v}</option>`).join('');
+                sel.value = currentVal;
+            }
+
+            updateSelectOptions('flt-date', dates);
+            updateSelectOptions('flt-supplier', suppliers);
+            updateSelectOptions('flt-proj', projects);
+            updateSelectOptions('flt-sec', sections);
+
             // Значения фильтров
-            const fDate = document.getElementById('flt-date').value.toLowerCase();
+            const fDate = document.getElementById('flt-date').value;
             const fName = document.getElementById('flt-name').value.toLowerCase();
             const fUnit = document.getElementById('flt-unit').value.toLowerCase();
             const fQty = document.getElementById('flt-qty').value.toLowerCase();
             const fPrice = document.getElementById('flt-price').value.toLowerCase();
             const fSum = document.getElementById('flt-sum').value.toLowerCase();
             const fPayment = document.getElementById('flt-payment').value;
-            const fSupplier = document.getElementById('flt-supplier').value.toLowerCase();
-            const fProj = document.getElementById('flt-proj').value.toLowerCase();
-            const fSec = document.getElementById('flt-sec').value.toLowerCase();
+            const fSupplier = document.getElementById('flt-supplier').value;
+            const fProj = document.getElementById('flt-proj').value;
+            const fSec = document.getElementById('flt-sec').value;
 
             const filtered = data.filter(item => {
                 const matchesPayment = !fPayment || item.paymentStatus === fPayment;
-                return matchesPayment &&
-                       String(item.date).toLowerCase().includes(fDate) &&
+                const matchesDate = !fDate || String(item.date) === fDate;
+                const matchesSupplier = !fSupplier || String(item.supplier) === fSupplier;
+                const matchesProj = !fProj || String(item.project) === fProj;
+                const matchesSec = !fSec || String(item.section) === fSec;
+
+                return matchesPayment && matchesDate && matchesSupplier && matchesProj && matchesSec &&
                        String(item.name).toLowerCase().includes(fName) &&
                        String(item.unit).toLowerCase().includes(fUnit) &&
                        String(item.qty).toLowerCase().includes(fQty) &&
                        String(item.unitPrice).toLowerCase().includes(fPrice) &&
-                       String(item.sum).toLowerCase().includes(fSum) &&
-                       String(item.supplier).toLowerCase().includes(fSupplier) &&
-                       String(item.project).toLowerCase().includes(fProj) &&
-                       String(item.section).toLowerCase().includes(fSec);
+                       String(item.sum).toLowerCase().includes(fSum);
             });
 
             if (filtered.length === 0) {
