@@ -135,11 +135,12 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Должность:</label>
                     <select id="emp-position" class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#2d6a4f]">
+                        <option value="Директор">Директор</option>
+                        <option value="Администратор">Администратор</option>
+                        <option value="Главный инженер">Главный инженер</option>
                         <option value="Прораб">Прораб</option>
                         <option value="Снабженец">Снабженец</option>
-                        <option value="Мастер участка">Мастер участка</option>
                         <option value="Инженер ПТО">Инженер ПТО</option>
-                        <option value="Монтажник / Строитель">Монтажник / Строитель</option>
                     </select>
                 </div>
                 <div>
@@ -155,8 +156,8 @@
     </div>
 
     <script>
-        // Сброс старого кэша для корректной работы связи проектов и сотрудников
-        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v2')) {
+        // Сброс кэша для обновления должностей и сотрудников
+        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v3')) {
             const defaultEmployees = [
                 { id: 1, name: "Иван Прорабов", position: "Прораб", phone: "+38 (050) 123-45-67" },
                 { id: 2, name: "Петренко Сергей Николаевич", position: "Прораб", phone: "+380507016548" },
@@ -169,7 +170,7 @@
                 { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", sections: ["Демонтаж", "Перегородки", "Чистовая отделка", "Электрика"] }
             ];
             localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
-            localStorage.setItem('rsk_projects_v2', 'true');
+            localStorage.setItem('rsk_projects_v3', 'true');
         }
 
         if (!localStorage.getItem('rsk_orders')) {
@@ -394,7 +395,7 @@
             `).join('');
         }
 
-        function updateOrderStatus(id, status) {
+        function updateOrderStatus(id, status, oldStatus) {
             let orders = JSON.parse(localStorage.getItem('rsk_orders')).map(o => {
                 if (o.id === id) o.status = status;
                 return o;
