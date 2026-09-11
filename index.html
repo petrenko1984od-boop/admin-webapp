@@ -40,11 +40,11 @@
                 <button onclick="openAddProjectModal()" class="bg-[#15803d] hover:bg-[#166534] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition">➕ Добавить объект</button>
             </div>
             <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Сюда динамически рендерятся объекты-кнопки -->
+                <!-- Сюда динамически рендерятся объекты -->
             </div>
         </section>
 
-        <!-- ЭКРАН КАРТОЧКИ ОБЪЕКТА (НА ВСЮ СТРАНИЦУ) -->
+        <!-- ЭКРАН КАРТОЧКИ ОБЪЕКТА -->
         <section id="tab-project-detail" class="hidden space-y-4">
             <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border-l-4 border-[#15803d]">
                 <button onclick="switchTab('projects')" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1">
@@ -111,9 +111,7 @@
                 <h2 class="text-lg font-bold text-gray-800">👥 Управление сотрудниками</h2>
                 <button onclick="openAddEmployeeModal()" class="bg-[#15803d] hover:bg-[#166534] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition">➕ Добавить сотрудника</button>
             </div>
-            <div id="employees-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Сюда динамически рендерятся карточки-кнопки сотрудников -->
-            </div>
+            <div id="employees-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </section>
 
         <!-- ВКЛАДКА 3: СНАБЖЕНИЕ -->
@@ -158,6 +156,22 @@
         </section>
 
     </main>
+
+    <!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА СМЕТЫ -->
+    <div id="estimate-viewer-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full h-[85vh] flex flex-col overflow-hidden">
+            <div class="bg-[#15803d] text-white px-4 py-3 flex justify-between items-center">
+                <span class="font-bold text-sm truncate" id="modal-estimate-title">📄 Просмотр сметы</span>
+                <div class="flex items-center gap-2">
+                    <a id="modal-estimate-download" href="#" download class="bg-white text-[#15803d] px-3 py-1 rounded-lg text-xs font-semibold hover:bg-emerald-50 transition">Скачать</a>
+                    <button onclick="closeEstimateModal()" class="text-white hover:text-gray-200 font-bold text-lg px-2">✕</button>
+                </div>
+            </div>
+            <div class="flex-1 bg-gray-100 p-2 flex items-center justify-center overflow-hidden" id="modal-estimate-content">
+                <!-- Сюда динамически вставляется содержимое -->
+            </div>
+        </div>
+    </div>
 
     <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ ОБЪЕКТА -->
     <div id="project-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -216,7 +230,7 @@
     <div id="employee-card-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-lg max-w-lg w-full p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="text-lg font-bold text-gray-800" id="card-modal-title">👤 Карточка сотрудника</h3>
+                <h3 class="text-lg font-bold text-gray-800">👤 Карточка сотрудника</h3>
                 <button onclick="closeEmployeeCardModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
             </div>
             
@@ -420,26 +434,34 @@
             const p = projects.find(item => item.id === currentActiveProjId);
             if (!p || !p.estimate) return;
 
-            const win = window.open();
-            win.document.write(`
-                <html>
-                <head><title>Смета — ${p.name}</title></head>
-                <body style="margin:0; font-family:sans-serif; background:#f3f4f6; display:flex; flex-direction:column; height:100vh;">
-                    <div style="background:#15803d; color:white; padding:12px 20px; display:flex; justify-content:between; align-items:center;">
-                        <span style="font-weight:bold;">📄 Смета: ${p.estimate.name}</span>
-                        <a href="${p.estimate.data}" download="${p.estimate.name}" style="background:white; color:#15803d; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px;">Скачать файл</a>
+            document.getElementById('modal-estimate-title').innerText = `📄 ${p.estimate.name}`;
+            
+            const downloadBtn = document.getElementById('modal-estimate-download');
+            downloadBtn.href = p.estimate.data;
+            downloadBtn.download = p.estimate.name;
+
+            const container = document.getElementById('modal-estimate-content');
+            
+            if (p.estimate.data.startsWith('data:image')) {
+                container.innerHTML = `<img src="${p.estimate.data}" class="max-w-full max-h-full object-contain rounded-lg shadow-sm">`;
+            } else if (p.estimate.data.startsWith('data:application/pdf')) {
+                container.innerHTML = `<iframe src="${p.estimate.data}" class="w-full h-full border-none rounded-lg"></iframe>`;
+            } else {
+                container.innerHTML = `
+                    <div class="text-center p-6 space-y-3 bg-white rounded-xl shadow-sm">
+                        <p class="text-sm font-bold text-gray-800">Этот формат файла не поддерживается для прямого просмотра в приложении.</p>
+                        <p class="text-xs text-gray-500">Вы можете скачать его на устройство, чтобы открыть в соответствующей программе (например, Excel).</p>
+                        <a href="${p.estimate.data}" download="${p.estimate.name}" class="inline-block bg-[#15803d] text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#166534] transition">Скачать ${p.estimate.name}</a>
                     </div>
-                    <div style="flex:1; display:flex; justify-content:center; align-items:center; padding:20px;">
-                        ${p.estimate.data.startsWith('data:image') ? `<img src="${p.estimate.data}" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">` : 
-                          p.estimate.data.startsWith('data:application/pdf') ? `<iframe src="${p.estimate.data}" style="width:100%; height:100%; border:none;"></iframe>` : 
-                          `<div style="background:white; padding:30px; border-radius:8px; text-align:center; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
-                              <p style="margin-bottom:15px; font-weight:bold;">Файл готов к просмотру / скачиванию</p>
-                              <a href="${p.estimate.data}" download="${p.estimate.name}" style="background:#15803d; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:bold;">Скачать ${p.estimate.name}</a>
-                          </div>`}
-                    </div>
-                </body>
-                </html>
-            `);
+                `;
+            }
+
+            document.getElementById('estimate-viewer-modal').classList.remove('hidden');
+        }
+
+        function closeEstimateModal() {
+            document.getElementById('estimate-viewer-modal').classList.add('hidden');
+            document.getElementById('modal-estimate-content').innerHTML = '';
         }
 
         function deleteEstimateFile() {
