@@ -161,7 +161,6 @@
                     <table class="w-full text-left text-xs">
                         <thead class="bg-gray-100 text-gray-700 uppercase border-b font-semibold">
                             <tr>
-                                <th class="p-2.5">№</th>
                                 <th class="p-2.5">Дата</th>
                                 <th class="p-2.5">Наименование</th>
                                 <th class="p-2.5">Ед. изм.</th>
@@ -174,7 +173,6 @@
                                 <th class="p-2.5">Раздел</th>
                             </tr>
                             <tr class="bg-gray-50 border-t">
-                                <th class="p-1.5"></th>
                                 <th class="p-1.5">
                                     <select id="flt-date" onchange="renderMaterialsRegistry()" class="w-full border rounded p-1 text-[11px] font-normal bg-white outline-none">
                                         <option value="">Все</option>
@@ -433,13 +431,12 @@
 
         document.getElementById('order-date').valueAsDate = new Date();
 
-        // Функция генерации уникального номера заявки
         function generateRequestNumber() {
             const now = new Date();
             const year = now.getFullYear().toString().slice(-2);
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
-            const randomSuffix = Math.floor(1000 + Math.random() * 9000); // 4-значный случайный хвост для уникальности
+            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
             return `З-${year}${month}${day}-${randomSuffix}`;
         }
 
@@ -579,11 +576,11 @@
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" class="text-center text-gray-400 py-6">Нет данных в реестре материалов</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center text-gray-400 py-6">Нет данных в реестре материалов</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = filtered.map((item, index) => {
+            tbody.innerHTML = filtered.map((item) => {
                 const paymentBadge = item.paymentStatus === 'В долг' 
                     ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold text-[10px]">В долг</span>` 
                     : `<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold text-[10px]">Оплачено</span>`;
@@ -592,7 +589,6 @@
 
                 return `
                     <tr onclick="openMaterialCard('${jsonStr}')" class="hover:bg-emerald-50/60 cursor-pointer transition">
-                        <td class="p-2.5 whitespace-nowrap font-bold text-gray-600">${index + 1}</td>
                         <td class="p-2.5 whitespace-nowrap">${item.date}</td>
                         <td class="p-2.5 font-semibold text-gray-900">${item.name}</td>
                         <td class="p-2.5 whitespace-nowrap">${item.unit}</td>
@@ -660,8 +656,7 @@
                 return;
             }
 
-            const exportRows = data.map((item, index) => ({
-                "№": index + 1,
+            const exportRows = data.map((item) => ({
                 "Дата": item.date,
                 "Наименование": item.name,
                 "Ед. изм.": item.unit,
