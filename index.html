@@ -1499,22 +1499,25 @@
             if (badge) badge.innerText = orders.length;
         }
 
-        function updateEmployeeBadgeCount() {
-            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
-            const badge = document.getElementById('employees-badge');
-            if (badge) badge.innerText = employees.length;
-        }
-
         function updateProjectBadgeCount() {
-            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const projects = JSON.parse(localStorage.getItem('rsk_projects')) || [];
             const badge = document.getElementById('projects-badge');
             if (badge) badge.innerText = projects.length;
         }
 
-        updateOrdersBadgeCount();
-        updateEmployeeBadgeCount();
-        updateProjectBadgeCount();
-        renderProjects();
+        function updateEmployeeBadgeCount() {
+            const employees = JSON.parse(localStorage.getItem('rsk_employees')) || [];
+            const badge = document.getElementById('employees-badge');
+            if (badge) badge.innerText = employees.length;
+        }
+
+        // Первичная инициализация счетчиков при загрузке страницы
+        window.addEventListener('DOMContentLoaded', () => {
+            updateProjectBadgeCount();
+            updateEmployeeBadgeCount();
+            updateOrdersBadgeCount();
+            renderProjects();
+        });
     </script>
 </body>
 </html>
