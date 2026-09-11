@@ -161,6 +161,7 @@
                     <table class="w-full text-left text-xs">
                         <thead class="bg-gray-100 text-gray-700 uppercase border-b font-semibold">
                             <tr>
+                                <th class="p-2.5">№ заявки</th>
                                 <th class="p-2.5">Дата</th>
                                 <th class="p-2.5">Наименование</th>
                                 <th class="p-2.5">Ед. изм.</th>
@@ -173,6 +174,7 @@
                                 <th class="p-2.5">Раздел</th>
                             </tr>
                             <tr class="bg-gray-50 border-t">
+                                <th class="p-1.5"></th>
                                 <th class="p-1.5">
                                     <select id="flt-date" onchange="renderMaterialsRegistry()" class="w-full border rounded p-1 text-[11px] font-normal bg-white outline-none">
                                         <option value="">Все</option>
@@ -431,6 +433,16 @@
 
         document.getElementById('order-date').valueAsDate = new Date();
 
+        // Функция генерации уникального номера заявки
+        function generateRequestNumber() {
+            const now = new Date();
+            const year = now.getFullYear().toString().slice(-2);
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const randomSuffix = Math.floor(1000 + Math.random() * 9000); // 4-значный случайный хвост для уникальности
+            return `З-${year}${month}${day}-${randomSuffix}`;
+        }
+
         function switchTab(tabId) {
             ['projects', 'project-detail', 'employees', 'orders', 'registry', 'new-order'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
@@ -507,7 +519,7 @@
                         let payment = typeof it === 'object' ? (it.paymentStatus || 'Оплачено') : 'Оплачено';
                         
                         list.push({
-                            orderId: o.id,
+                            orderId: o.requestNumber || o.id, // Используем уникальный номер заявки
                             createdAt: o.createdAt || 'Н/Д',
                             date: o.date || '',
                             closedDate: o.purchaseData ? (o.purchaseData.closedDate || o.createdAt || 'Н/Д') : 'Н/Д',
@@ -567,7 +579,7 @@
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" class="text-center text-gray-400 py-6">Нет данных в реестре материалов</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" class="text-center text-gray-400 py-6">Нет данных в реестре материалов</td></tr>`;
                 return;
             }
 
@@ -576,11 +588,11 @@
                     ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold text-[10px]">В долг</span>` 
                     : `<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold text-[10px]">Оплачено</span>`;
 
-                // Сохраняем данные во временный объект для карточки по индексу или передаем в функцию строку
                 const jsonStr = encodeURIComponent(JSON.stringify(item));
 
                 return `
                     <tr onclick="openMaterialCard('${jsonStr}')" class="hover:bg-emerald-50/60 cursor-pointer transition">
+                        <td class="p-2.5 whitespace-nowrap font-mono font-bold text-[#15803d]">${item.orderId}</td>
                         <td class="p-2.5 whitespace-nowrap">${item.date}</td>
                         <td class="p-2.5 font-semibold text-gray-900">${item.name}</td>
                         <td class="p-2.5 whitespace-nowrap">${item.unit}</td>
@@ -608,7 +620,7 @@
                 <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 space-y-2">
                     <div class="flex justify-between items-center border-b border-emerald-200 pb-2">
                         <span class="font-bold text-[#166534] text-sm">📦 ${item.name}</span>
-                        <span class="text-xs font-bold text-emerald-800 bg-emerald-200/60 px-2 py-0.5 rounded">Заявка № ${item.orderId}</span>
+                        <span class="text-xs font-bold text-emerald-800 bg-emerald-200/60 px-2 py-0.5 rounded font-mono">${item.orderId}</span>
                     </div>
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <p><strong>Количество:</strong> ${item.qty} ${item.unit}</p>
@@ -873,7 +885,7 @@
                             let paymentStatus = typeof it === 'object' ? (it.paymentStatus || 'Оплачено') : 'Оплачено';
                             
                             factMaterials += price;
-                            materialsList.push({ name, price, paymentStatus, supplier: o.purchaseData ? o.purchaseData.supplier : 'Не указан' });
+                            materialsList.push({ name, price, paymentStatus, supplier: o.purchaseData ? o.purchaseData.supplier : 'Не указан', requestNumber: o.requestNumber || o.id });
                         });
                     }
                 }
@@ -924,7 +936,7 @@
                     return `
                         <div class="flex justify-between items-center text-xs py-1.5 border-b border-gray-100 last:border-0">
                             <div>
-                                <span class="font-semibold text-gray-800">📦 ${m.name}</span>
+                                <span class="font-bold text-[#15803d] font-mono">[${m.requestNumber}]</span> <span class="font-semibold text-gray-800">📦 ${m.name}</span>
                                 <span class="text-[10px] text-gray-400 block">Поставщик: ${m.supplier} | ${payBadge}</span>
                             </div>
                             <span class="font-bold text-[#15803d]">${m.price.toLocaleString('ru-RU')} грн</span>
@@ -1269,8 +1281,12 @@
                 return;
             }
 
+            // Генерируем уникальный номер заявки (например, З-260912-4821)
+            const uniqueRequestNumber = generateRequestNumber();
+
             const newOrder = {
                 id: Date.now(),
+                requestNumber: uniqueRequestNumber, // Сквозной номер
                 project: document.getElementById('order-proj').value,
                 section: sectionVal,
                 items: itemsList,
@@ -1303,6 +1319,8 @@
                 if (o.status === '🟡 В работе') statusBadgeClass = 'bg-yellow-100 text-yellow-700';
                 if (o.status === '🟢 Закрыта') statusBadgeClass = 'bg-green-100 text-green-700';
 
+                const reqNum = o.requestNumber || `З-${o.id}`; // Обратная совместимость для старых заявок
+
                 let itemsHtml = '';
                 if (o.items && Array.isArray(o.items)) {
                     itemsHtml = o.items.map(it => {
@@ -1332,6 +1350,7 @@
                     <div class="border rounded-xl p-4 bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-sm">
                         <div class="space-y-1.5 w-full md:w-3/4">
                             <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-bold text-[#15803d] font-mono bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">${reqNum}</span>
                                 <span class="font-bold text-[#166534]">🏗 ${o.project}</span>
                                 <span class="text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-700">${o.section}</span>
                                 <span class="px-2 py-0.5 text-xs font-bold rounded ${statusBadgeClass}">${o.status}</span>
