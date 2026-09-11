@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RSK Odessa — Управление строительством</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Подключаем библиотеку SheetJS для чтения Excel в браузере -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen">
 
     <!-- Шапка навигации -->
     <header class="bg-[#15803d] text-white shadow-md border-b-4 border-[#16a34a]">
         <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
-            <!-- Логотип и название -->
             <div class="flex items-center gap-3">
                 <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center">
                     <img src="logo.png" alt="RSK Logo" class="h-9 w-auto object-contain">
@@ -21,7 +22,6 @@
                     <p class="text-[10px] text-emerald-100 tracking-wider uppercase">building & repair</p>
                 </div>
             </div>
-            <!-- Навигационные кнопки -->
             <div class="flex flex-wrap gap-2 items-center">
                 <button onclick="switchTab('projects')" id="btn-projects" class="px-3 py-2 bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">🏗 Объекты (<span id="projects-badge">0</span>)</button>
                 <button onclick="switchTab('employees')" id="btn-employees" class="px-3 py-2 bg-[#16a34a]/70 hover:bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">👥 Сотрудники (<span id="employees-badge">0</span>)</button>
@@ -39,9 +39,7 @@
                 <h2 class="text-lg font-bold text-gray-800">📋 Активные объекты</h2>
                 <button onclick="openAddProjectModal()" class="bg-[#15803d] hover:bg-[#166534] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition">➕ Добавить объект</button>
             </div>
-            <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Сюда динамически рендерятся объекты -->
-            </div>
+            <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </section>
 
         <!-- ЭКРАН КАРТОЧКИ ОБЪЕКТА -->
@@ -54,8 +52,11 @@
             </div>
 
             <div class="bg-white rounded-xl shadow-md p-6 space-y-6 border-t-4 border-[#15803d]">
-                <div class="border-b pb-4">
+                <div class="border-b pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <h2 class="text-xl font-bold text-[#166534]" id="card-proj-title">🏗 Название объекта</h2>
+                    <div id="card-proj-totals" class="text-xs font-semibold bg-emerald-50 text-[#15803d] px-3 py-1.5 rounded-lg border border-emerald-100">
+                        Смета: 0 грн | Работы: 0 грн | Материалы: 0 грн
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -74,12 +75,12 @@
                     </div>
                 </div>
 
-                <!-- БЛОК СМЕТЫ ОБЪЕКТА -->
+                <!-- БЛОК ЗАГРУЗКИ СМЕТЫ -->
                 <div class="border-t pt-4 space-y-3">
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">📊 Смета объекта</h3>
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">📊 Загрузка файла сметы (Excel)</h3>
                     <div class="p-4 bg-gray-50 rounded-xl border space-y-3">
                         <div id="estimate-empty-state" class="text-xs text-gray-500">
-                            Смета еще не загружена. Выберите файл (Excel, PDF или документ) и нажмите «Загрузить смету».
+                            Смета еще не загружена. Загрузите файл Excel (.xlsx), чтобы автоматически сформировать разделы, объемы и сметную стоимость.
                         </div>
                         <div id="estimate-file-info" class="hidden flex items-center justify-between bg-white p-3 rounded-lg border text-xs">
                             <div class="flex items-center gap-2 overflow-hidden">
@@ -90,16 +91,26 @@
                                 </div>
                             </div>
                             <div class="flex gap-2">
-                                <button onclick="viewEstimateFile()" class="bg-emerald-100 hover:bg-emerald-200 text-[#15803d] px-3 py-1.5 rounded-lg font-semibold transition">👁 Посмотреть</button>
+                                <button onclick="viewEstimateFile()" class="bg-emerald-100 hover:bg-emerald-200 text-[#15803d] px-3 py-1.5 rounded-lg font-semibold transition">👁 Оригинал файла</button>
                                 <button onclick="deleteEstimateFile()" class="bg-red-50 hover:bg-red-100 text-red-500 px-2 py-1.5 rounded-lg transition">🗑</button>
                             </div>
                         </div>
 
-                        <!-- Форма загрузки -->
                         <div class="flex flex-col sm:flex-row gap-2 pt-1">
-                            <input type="file" id="estimate-file-input" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-[#15803d] hover:file:bg-emerald-100 cursor-pointer border rounded-lg bg-white">
-                            <button onclick="uploadEstimate()" class="bg-[#15803d] hover:bg-[#166534] text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow whitespace-nowrap">📤 Загрузить смету</button>
+                            <input type="file" id="estimate-file-input" accept=".xlsx, .xls" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-[#15803d] hover:file:bg-emerald-100 cursor-pointer border rounded-lg bg-white">
+                            <button onclick="uploadAndParseEstimate()" class="bg-[#15803d] hover:bg-[#166534] text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow whitespace-nowrap">📤 Загрузить и разобрать смету</button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- БЛОК РАЗДЕЛОВ: ПЛАН / ФАКТ -->
+                <div class="border-t pt-4 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">📁 Разделы сметы (План / Факт)</h3>
+                        <span class="text-[11px] text-gray-400">Автоматически извлекается из Excel</span>
+                    </div>
+                    <div id="sections-container" class="space-y-3">
+                        <!-- Сюда динамически рендерятся разделы с таблицей план/факт -->
                     </div>
                 </div>
             </div>
@@ -157,7 +168,7 @@
 
     </main>
 
-    <!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА СМЕТЫ -->
+    <!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА ОРИГИНАЛА ФАЙЛА -->
     <div id="estimate-viewer-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full h-[85vh] flex flex-col overflow-hidden">
             <div class="bg-[#15803d] text-white px-4 py-3 flex justify-between items-center">
@@ -167,9 +178,7 @@
                     <button onclick="closeEstimateModal()" class="text-white hover:text-gray-200 font-bold text-lg px-2">✕</button>
                 </div>
             </div>
-            <div class="flex-1 bg-gray-100 p-2 flex items-center justify-center overflow-hidden" id="modal-estimate-content">
-                <!-- Сюда динамически вставляется содержимое -->
-            </div>
+            <div class="flex-1 bg-gray-100 p-2 flex items-center justify-center overflow-hidden" id="modal-estimate-content"></div>
         </div>
     </div>
 
@@ -256,7 +265,7 @@
     </div>
 
     <script>
-        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v6')) {
+        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v7')) {
             const defaultEmployees = [
                 { id: 1, name: "Иван Прорабов", position: "Прораб", phone: "+38 (050) 123-45-67", notes: "" },
                 { id: 2, name: "Петренко Сергей Николаевич", position: "Прораб", phone: "+380507016548", notes: "" },
@@ -265,11 +274,11 @@
             localStorage.setItem('rsk_employees', JSON.stringify(defaultEmployees));
 
             const defaultProjects = [
-                { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", notes: "", estimate: null },
-                { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", notes: "", estimate: null }
+                { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", notes: "", estimate: null, sections: [] },
+                { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", notes: "", estimate: null, sections: [] }
             ];
             localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
-            localStorage.setItem('rsk_projects_v6', 'true');
+            localStorage.setItem('rsk_projects_v7', 'true');
         }
 
         if (!localStorage.getItem('rsk_orders')) {
@@ -329,6 +338,11 @@
             container.innerHTML = projects.map(p => {
                 const foremanObj = employees.find(e => e.name === p.foreman);
                 const foremanPhone = foremanObj ? foremanObj.phone : '';
+                
+                let totalCost = 0;
+                if (p.sections && p.sections.length > 0) {
+                    totalCost = p.sections.reduce((sum, s) => sum + s.planTotal, 0);
+                }
 
                 return `
                     <button onclick="openProjectDetail(${p.id})" class="w-full text-left bg-white rounded-xl shadow-sm border p-4 flex flex-col justify-between space-y-3 border-l-4 border-[#15803d] hover:bg-emerald-50/50 transition cursor-pointer group">
@@ -339,7 +353,7 @@
                             </div>
                             <p class="text-xs text-gray-600"><strong>👨‍💼 Прораб:</strong> <span class="text-gray-900 font-semibold">${p.foreman || 'Не назначен'}</span></p>
                             ${foremanPhone ? `<p class="text-xs text-gray-600"><strong>📞 Телефон:</strong> <span class="text-[#15803d] font-semibold">${foremanPhone}</span></p>` : ''}
-                            <p class="text-[11px] text-gray-400 pt-1">📊 Смета: ${p.estimate ? '✅ Загружена' : '❌ Не загружена'}</p>
+                            <p class="text-[11px] text-gray-400 pt-1">📊 Смета: ${p.estimate ? `✅ Загружена (${totalCost.toLocaleString('ru-RU')} грн)` : '❌ Не загружена'}</p>
                         </div>
                     </button>
                 `;
@@ -372,6 +386,7 @@
             document.getElementById('card-proj-delete-btn').setAttribute('onclick', `deleteProject(${p.id})`);
             
             renderEstimateUI(p);
+            renderSectionsUI(p);
             switchTab('project-detail');
         }
 
@@ -393,11 +408,12 @@
             }
         }
 
-        function uploadEstimate() {
+        // ПАРСЕР EXCEL СМЕТЫ
+        function uploadAndParseEstimate() {
             if (!currentActiveProjId) return;
             const fileInput = document.getElementById('estimate-file-input');
             if (fileInput.files.length === 0) {
-                alert('Пожалуйста, выберите файл сметы');
+                alert('Пожалуйста, выберите Excel файл сметы');
                 return;
             }
 
@@ -405,28 +421,191 @@
             const reader = new FileReader();
 
             reader.onload = function(e) {
-                const base64Data = e.target.result;
-                const estimateObj = {
-                    name: file.name,
-                    data: base64Data,
-                    date: new Date().toLocaleString()
-                };
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-                projects = projects.map(p => {
-                    if (p.id === currentActiveProjId) {
-                        p.estimate = estimateObj;
+                    let sections = [];
+                    let currentSection = null;
+
+                    // Обходим строки таблицы и ищем разделы и суммы
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (!row || row.length === 0) continue;
+
+                        let rowText = String(row[1] || row[0] || '').trim();
+
+                        // Проверяем, является ли строка заголовком раздела (например, "Раздел: Демонтажно-подготовительные работы")
+                        if (rowText.toLowerCase().includes('раздел:')) {
+                            if (currentSection) {
+                                sections.push(currentSection);
+                            }
+                            currentSection = {
+                                name: rowText,
+                                planWorks: 0,
+                                planMaterials: 0,
+                                planTotal: 0,
+                                factWorks: 0,
+                                factMaterials: 0,
+                                factTotal: 0
+                            };
+                            continue;
+                        }
+
+                        // Проверяем строку "Итого по разделу"
+                        if (rowText.toLowerCase().includes('итого по разделу') && currentSection) {
+                            // В вашем шаблоне колонки: G (индекс 6) — Стоимость Работы план, H (индекс 7) — Материалы план, I (индекс 8) — Всего
+                            let pWorks = parseFloat(row[6]) || 0;
+                            let pMat = parseFloat(row[7]) || 0;
+                            let pTot = parseFloat(row[8]) || (pWorks + pMat);
+
+                            currentSection.planWorks = pWorks;
+                            currentSection.planMaterials = pMat;
+                            currentSection.planTotal = pTot;
+                            
+                            sections.push(currentSection);
+                            currentSection = null;
+                        }
                     }
-                    return p;
-                });
 
-                localStorage.setItem('rsk_projects', JSON.stringify(projects));
-                const updatedProj = projects.find(p => p.id === currentActiveProjId);
-                renderEstimateUI(updatedProj);
-                alert('Смета успешно загружена!');
+                    // Если остался открытый раздел без явного "Итого", сохраним то, что есть
+                    if (currentSection) {
+                        sections.push(currentSection);
+                    }
+
+                    // Если в смете разделы не размечены стандартным текстом, создадим базовый демонстрационный раздел
+                    if (sections.length === 0) {
+                        sections.push({
+                            name: "Основной сметный расчет",
+                            planWorks: 0,
+                            planMaterials: 0,
+                            planTotal: 0,
+                            factWorks: 0,
+                            factMaterials: 0,
+                            factTotal: 0
+                        });
+                    }
+
+                    const estimateObj = {
+                        name: file.name,
+                        data: e.target.result, // Храним массив байт для скачивания
+                        date: new Date().toLocaleString()
+                    };
+
+                    let projects = JSON.parse(localStorage.getItem('rsk_projects'));
+                    projects = projects.map(p => {
+                        if (p.id === currentActiveProjId) {
+                            p.estimate = estimateObj;
+                            // Сохраняем разделы, а факты инициализируем нулями (если их еще не было)
+                            p.sections = sections.map(sec => {
+                                const existingSec = p.sections ? p.sections.find(s => s.name === sec.name) : null;
+                                return {
+                                    name: sec.name,
+                                    planWorks: sec.planWorks,
+                                    planMaterials: sec.planMaterials,
+                                    planTotal: sec.planTotal,
+                                    factWorks: existingSec ? existingSec.factWorks : 0,
+                                    factMaterials: existingSec ? existingSec.factMaterials : 0,
+                                    factTotal: existingSec ? existingSec.factTotal : 0
+                                };
+                            });
+                        }
+                        return p;
+                    });
+
+                    localStorage.setItem('rsk_projects', JSON.stringify(projects));
+                    const updatedProj = projects.find(p => p.id === currentActiveProjId);
+                    renderEstimateUI(updatedProj);
+                    renderSectionsUI(updatedProj);
+                    alert('Смета успешно загружена и разделы автоматически созданы!');
+
+                } catch (err) {
+                    console.error(err);
+                    alert('Ошибка при чтении Excel файла. Убедитесь, что это корректный файл .xlsx');
+                }
             };
 
-            reader.readAsDataURL(file);
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderSectionsUI(p) {
+            const container = document.getElementById('sections-container');
+            const totalsContainer = document.getElementById('card-proj-totals');
+
+            if (!p.sections || p.sections.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 py-3 text-center">Разделы появятся автоматически после загрузки и разбора файла сметы.</p>`;
+                totalsContainer.innerText = `Смета: 0 грн | Работы: 0 грн | Материалы: 0 грн`;
+                return;
+            }
+
+            let sumPlanWorks = 0;
+            let sumPlanMat = 0;
+            let sumPlanTotal = 0;
+            let sumFactWorks = 0;
+            let sumFactMat = 0;
+            let sumFactTotal = 0;
+
+            container.innerHTML = p.sections.map((sec, idx) => {
+                sumPlanWorks += sec.planWorks;
+                sumPlanMat += sec.planMaterials;
+                sumPlanTotal += sec.planTotal;
+                sumFactWorks += sec.factWorks;
+                sumFactMat += sec.factMaterials;
+                sumFactTotal += sec.factTotal;
+
+                return `
+                    <div class="border rounded-xl p-4 bg-gray-50 space-y-3">
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <h4 class="font-bold text-[#166534] text-sm">📌 ${sec.name}</h4>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <!-- ПЛАН -->
+                            <div class="bg-white p-3 rounded-lg border space-y-1 shadow-sm">
+                                <p class="font-bold text-gray-500 uppercase tracking-wider text-[10px]">📊 План (из сметы)</p>
+                                <p>Работы: <strong class="text-gray-800">${sec.planWorks.toLocaleString('ru-RU')} грн</strong></p>
+                                <p>Материалы: <strong class="text-gray-800">${sec.planMaterials.toLocaleString('ru-RU')} грн</strong></p>
+                                <p class="pt-1 border-t text-sm">Итого план: <strong class="text-[#15803d]">${sec.planTotal.toLocaleString('ru-RU')} грн</strong></p>
+                            </div>
+                            <!-- ФАКТ -->
+                            <div class="bg-emerald-50/60 p-3 rounded-lg border border-emerald-100 space-y-2">
+                                <p class="font-bold text-[#15803d] uppercase tracking-wider text-[10px]">💰 Факт (реально потрачено)</p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[10px] text-gray-600 mb-0.5">Факт работы:</label>
+                                        <input type="number" value="${sec.factWorks}" onchange="updateFactValue(${idx}, 'factWorks', this.value)" class="w-full border rounded p-1 text-xs bg-white outline-none focus:ring-1 focus:ring-[#15803d]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] text-gray-600 mb-0.5">Факт материалы:</label>
+                                        <input type="number" value="${sec.factMaterials}" onchange="updateFactValue(${idx}, 'factMaterials', this.value)" class="w-full border rounded p-1 text-xs bg-white outline-none focus:ring-1 focus:ring-[#15803d]">
+                                    </div>
+                                </div>
+                                <p class="pt-1 border-t border-emerald-200 text-sm">Итого факт: <strong class="text-[#166534]">${sec.factTotal.toLocaleString('ru-RU')} грн</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            totalsContainer.innerText = `Смета: ${sumPlanTotal.toLocaleString('ru-RU')} грн | Работы (План/Факт): ${sumPlanWorks.toLocaleString('ru-RU')} / ${sumFactWorks.toLocaleString('ru-RU')} грн | Матер. (План/Факт): ${sumPlanMat.toLocaleString('ru-RU')} / ${sumFactMat.toLocaleString('ru-RU')} грн`;
+        }
+
+        function updateFactValue(sectionIndex, field, value) {
+            let projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            projects = projects.map(p => {
+                if (p.id === currentActiveProjId) {
+                    let sec = p.sections[sectionIndex];
+                    sec[field] = parseFloat(value) || 0;
+                    sec.factTotal = sec.factWorks + sec.factMaterials;
+                }
+                return p;
+            });
+
+            localStorage.setItem('rsk_projects', JSON.stringify(projects));
+            const updatedProj = projects.find(p => p.id === currentActiveProjId);
+            renderSectionsUI(updatedProj);
         }
 
         function viewEstimateFile() {
@@ -436,25 +615,22 @@
 
             document.getElementById('modal-estimate-title').innerText = `📄 ${p.estimate.name}`;
             
+            // Превращаем массив байт обратно в Blob для ссылки
+            const blob = new Blob([new Uint8Array(p.estimate.data)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const blobUrl = URL.createObjectURL(blob);
+
             const downloadBtn = document.getElementById('modal-estimate-download');
-            downloadBtn.href = p.estimate.data;
+            downloadBtn.href = blobUrl;
             downloadBtn.download = p.estimate.name;
 
             const container = document.getElementById('modal-estimate-content');
-            
-            if (p.estimate.data.startsWith('data:image')) {
-                container.innerHTML = `<img src="${p.estimate.data}" class="max-w-full max-h-full object-contain rounded-lg shadow-sm">`;
-            } else if (p.estimate.data.startsWith('data:application/pdf')) {
-                container.innerHTML = `<iframe src="${p.estimate.data}" class="w-full h-full border-none rounded-lg"></iframe>`;
-            } else {
-                container.innerHTML = `
-                    <div class="text-center p-6 space-y-3 bg-white rounded-xl shadow-sm">
-                        <p class="text-sm font-bold text-gray-800">Этот формат файла не поддерживается для прямого просмотра в приложении.</p>
-                        <p class="text-xs text-gray-500">Вы можете скачать его на устройство, чтобы открыть в соответствующей программе (например, Excel).</p>
-                        <a href="${p.estimate.data}" download="${p.estimate.name}" class="inline-block bg-[#15803d] text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#166534] transition">Скачать ${p.estimate.name}</a>
-                    </div>
-                `;
-            }
+            container.innerHTML = `
+                <div class="text-center p-6 space-y-3 bg-white rounded-xl shadow-sm max-w-md">
+                    <p class="text-sm font-bold text-gray-800">Файл сметы успешно загружен и разобран.</p>
+                    <p class="text-xs text-gray-500">Вы можете скачать оригинальный файл Excel на свое устройство.</p>
+                    <a href="${blobUrl}" download="${p.estimate.name}" class="inline-block bg-[#15803d] text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#166534] transition">Скачать ${p.estimate.name}</a>
+                </div>
+            `;
 
             document.getElementById('estimate-viewer-modal').classList.remove('hidden');
         }
@@ -465,17 +641,19 @@
         }
 
         function deleteEstimateFile() {
-            if (confirm('Удалить прикрепленную смету?')) {
+            if (confirm('Удалить прикрепленную смету и все разделы?')) {
                 let projects = JSON.parse(localStorage.getItem('rsk_projects'));
                 projects = projects.map(p => {
                     if (p.id === currentActiveProjId) {
                         p.estimate = null;
+                        p.sections = [];
                     }
                     return p;
                 });
                 localStorage.setItem('rsk_projects', JSON.stringify(projects));
                 const updatedProj = projects.find(p => p.id === currentActiveProjId);
                 renderEstimateUI(updatedProj);
+                renderSectionsUI(updatedProj);
             }
         }
 
@@ -571,7 +749,7 @@
             const foreman = document.getElementById('new-proj-foreman').value;
 
             let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            projects.push({ id: Date.now(), name, foreman, notes: "", estimate: null });
+            projects.push({ id: Date.now(), name, foreman, notes: "", estimate: null, sections: [] });
             localStorage.setItem('rsk_projects', JSON.stringify(projects));
 
             document.getElementById('new-proj-name').value = '';
