@@ -112,6 +112,12 @@
                     <input type="text" id="new-proj-name" required placeholder="например, Коттедж в Фонтанке" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#2d6a4f]">
                 </div>
                 <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Ответственный прораб:</label>
+                    <select id="new-proj-foreman" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#2d6a4f]">
+                        <!-- Заполняется динамически из списка сотрудников -->
+                    </select>
+                </div>
+                <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Разделы сметы (через запятую):</label>
                     <input type="text" id="new-proj-sections" required placeholder="Фундамент, Стены, Кровля, Электрика" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#2d6a4f]">
                 </div>
@@ -143,12 +149,6 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">Привязанный объект:</label>
-                    <select id="emp-project" class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#2d6a4f]">
-                        <!-- Заполняется динамически -->
-                    </select>
-                </div>
-                <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Телефон:</label>
                     <input type="tel" id="emp-phone" required placeholder="+38 (050) 000-00-00" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#2d6a4f]">
                 </div>
@@ -162,20 +162,21 @@
 
     <script>
         // Инициализация дефолтных данных в LocalStorage, если пусто
-        if (!localStorage.getItem('rsk_projects')) {
-            const defaultProjects = [
-                { id: 1, name: "Частный дом (Ивановка)", sections: ["Фундамент", "Коробка стен", "Кровля", "Инженерные сети"] },
-                { id: 2, name: "Реконструкция офиса", sections: ["Демонтаж", "Перегородки", "Чистовая отделка", "Электрика"] }
-            ];
-            localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
-        }
-
         if (!localStorage.getItem('rsk_employees')) {
             const defaultEmployees = [
-                { id: 1, name: "Иван Прорабов", position: "Главный прораб", project: "Частный дом (Ивановка)", phone: "+38 (050) 123-45-67" },
-                { id: 2, name: "Олег Снабженец", position: "Снабженец", project: "Все объекты", phone: "+38 (067) 987-65-43" }
+                { id: 1, name: "Иван Прорабов", position: "Прораб", phone: "+38 (050) 123-45-67" },
+                { id: 2, name: "Петренко Сергей Николаевич", position: "Прораб", phone: "+380507016548" },
+                { id: 3, name: "Олег Снабженец", position: "Снабженец", phone: "+38 (067) 987-65-43" }
             ];
             localStorage.setItem('rsk_employees', JSON.stringify(defaultEmployees));
+        }
+
+        if (!localStorage.getItem('rsk_projects')) {
+            const defaultProjects = [
+                { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", sections: ["Фундамент", "Коробка стен", "Кровля", "Инженерные сети"] },
+                { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", sections: ["Демонтаж", "Перегородки", "Чистовая отделка", "Электрика"] }
+            ];
+            localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
         }
 
         if (!localStorage.getItem('rsk_orders')) {
@@ -211,6 +212,7 @@
         // Рендер проектов и смет
         function renderProjects() {
             const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
             const container = document.getElementById('projects-container');
             
             if (projects.length === 0) {
@@ -218,20 +220,30 @@
                 return;
             }
 
-            container.innerHTML = projects.map(p => `
-                <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3 border-l-4 border-[#2d6a4f]">
-                    <div class="flex justify-between items-start">
-                        <h3 class="font-bold text-[#1b4332] text-base">🏗 ${p.name}</h3>
-                        <button onclick="deleteProject(${p.id})" class="text-red-400 hover:text-red-600 text-xs">🗑 Удалить</button>
-                    </div>
-                    <div>
-                        <p class="text-xs font-semibold text-gray-500 mb-1">Разделы сметы:</p>
-                        <div class="flex flex-wrap gap-1">
-                            ${p.sections.map(s => `<span class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">${s}</span>`).join('')}
+            container.innerHTML = projects.map(p => {
+                // Ищем телефон прораба, чтобы можно было сразу позвонить из карточки объекта
+                const foremanObj = employees.find(e => e.name === p.foreman);
+                const foremanPhone = foremanObj ? foremanObj.phone : '';
+
+                return `
+                    <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3 border-l-4 border-[#2d6a4f]">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-[#1b4332] text-base">🏗 ${p.name}</h3>
+                            <button onclick="deleteProject(${p.id})" class="text-red-400 hover:text-red-600 text-xs">🗑 Удалить</button>
+                        </div>
+                        <div class="text-xs space-y-1 text-gray-600">
+                            <p><strong>👨‍💼 Прораб:</strong> <span class="text-gray-900 font-semibold">${p.foreman || 'Не назначен'}</span></p>
+                            ${foremanPhone ? `<p><strong>📞 Телефон прораба:</strong> <a href="tel:${foremanPhone}" class="text-[#2d6a4f] hover:underline font-semibold">${foremanPhone}</a></p>` : ''}
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 mb-1">Разделы сметы:</p>
+                            <div class="flex flex-wrap gap-1">
+                                ${p.sections.map(s => `<span class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">${s}</span>`).join('')}
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // Рендер сотрудников
@@ -253,7 +265,6 @@
                             <button onclick="deleteEmployee(${emp.id})" class="text-red-400 hover:text-red-600 text-xs">🗑 Удалить</button>
                         </div>
                         <p class="text-xs text-gray-600"><strong>Должность:</strong> ${emp.position}</p>
-                        <p class="text-xs text-gray-600"><strong>Объект:</strong> ${emp.project}</p>
                         <p class="text-xs text-gray-600"><strong>Телефон:</strong> <a href="tel:${emp.phone}" class="text-[#2d6a4f] hover:underline font-semibold">${emp.phone}</a></p>
                     </div>
                 </div>
@@ -261,16 +272,35 @@
         }
 
         // Модальное окно объектов
-        function openAddProjectModal() { document.getElementById('project-modal').classList.remove('hidden'); }
+        function openAddProjectModal() {
+            updateForemanDropdown();
+            document.getElementById('project-modal').classList.remove('hidden');
+        }
         function closeAddProjectModal() { document.getElementById('project-modal').classList.add('hidden'); }
+
+        // Заполнение выпадающего списка прорабов при создании объекта
+        function updateForemanDropdown() {
+            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            // Фильтруем сотрудников, оставляя тех, кто подходит на роль прораба (или показываем всех)
+            const foremen = employees.filter(e => e.position.toLowerCase().includes('прораб') || e.position.toLowerCase().includes('мастер') || e.position.toLowerCase().includes('инженер'));
+            
+            // Если профильных нет, берем вообще всех сотрудников
+            const listToRender = foremen.length > 0 ? foremen : employees;
+
+            const select = document.getElementById('new-proj-foreman');
+            if (select) {
+                select.innerHTML = listToRender.map(e => `<option value="${e.name}">${e.name} (${e.position})</option>`).join('');
+            }
+        }
 
         function saveNewProject(e) {
             e.preventDefault();
             const name = document.getElementById('new-proj-name').value.trim();
+            const foreman = document.getElementById('new-proj-foreman').value;
             const sections = document.getElementById('new-proj-sections').value.split(',').map(s => s.trim()).filter(Boolean);
 
             let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            projects.push({ id: Date.now(), name, sections });
+            projects.push({ id: Date.now(), name, foreman, sections });
             localStorage.setItem('rsk_projects', JSON.stringify(projects));
 
             document.getElementById('new-proj-name').value = '';
@@ -289,7 +319,6 @@
 
         // Модальное окно сотрудников
         function openAddEmployeeModal() {
-            updateProjectDropdowns();
             document.getElementById('employee-modal').classList.remove('hidden');
         }
         function closeAddEmployeeModal() { document.getElementById('employee-modal').classList.add('hidden'); }
@@ -298,11 +327,10 @@
             e.preventDefault();
             const name = document.getElementById('emp-name').value.trim();
             const position = document.getElementById('emp-position').value;
-            const project = document.getElementById('emp-project').value;
             const phone = document.getElementById('emp-phone').value.trim();
 
             let employees = JSON.parse(localStorage.getItem('rsk_employees'));
-            employees.push({ id: Date.now(), name, position, project, phone });
+            employees.push({ id: Date.now(), name, position, phone });
             localStorage.setItem('rsk_employees', JSON.stringify(employees));
 
             document.getElementById('emp-name').value = '';
@@ -320,19 +348,13 @@
             }
         }
 
-        // Заполнение выпадающих списков объектов
+        // Заполнение выпадающего списка объектов в форме заявки
         function updateProjectDropdowns() {
             const projects = JSON.parse(localStorage.getItem('rsk_projects'));
             
             const orderSelect = document.getElementById('order-proj');
             if (orderSelect) {
                 orderSelect.innerHTML = projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-            }
-
-            const empSelect = document.getElementById('emp-project');
-            if (empSelect) {
-                empSelect.innerHTML = `<option value="Все объекты">Все объекты (общий)</option>` + 
-                    projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
             }
         }
 
