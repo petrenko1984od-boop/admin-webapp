@@ -109,9 +109,7 @@
                         <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">📁 Разделы сметы (План / Факт)</h3>
                         <span class="text-[11px] text-gray-400">Автоматически извлекается из Excel</span>
                     </div>
-                    <div id="sections-container" class="space-y-3">
-                        <!-- Сюда динамически рендерятся разделы с таблицей план/факт -->
-                    </div>
+                    <div id="sections-container" class="space-y-3"></div>
                 </div>
             </div>
         </section>
@@ -140,11 +138,11 @@
             <form onsubmit="submitMaterialOrder(event)" class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Объект:</label>
-                    <select id="order-proj" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]"></select>
+                    <select id="order-proj" onchange="onOrderProjectChange()" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]"></select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Раздел / Этап:</label>
-                    <input type="text" id="order-section" required placeholder="например, Электрика" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
+                    <select id="order-section" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]"></select>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -408,7 +406,6 @@
             }
         }
 
-        // ПАРСЕР EXCEL СМЕТЫ
         function uploadAndParseEstimate() {
             if (!currentActiveProjId) return;
             const fileInput = document.getElementById('estimate-file-input');
@@ -431,14 +428,12 @@
                     let sections = [];
                     let currentSection = null;
 
-                    // Обходим строки таблицы и ищем разделы и суммы
                     for (let i = 0; i < rows.length; i++) {
                         const row = rows[i];
                         if (!row || row.length === 0) continue;
 
                         let rowText = String(row[1] || row[0] || '').trim();
 
-                        // Проверяем, является ли строка заголовком раздела (например, "Раздел: Демонтажно-подготовительные работы")
                         if (rowText.toLowerCase().includes('раздел:')) {
                             if (currentSection) {
                                 sections.push(currentSection);
@@ -455,9 +450,7 @@
                             continue;
                         }
 
-                        // Проверяем строку "Итого по разделу"
                         if (rowText.toLowerCase().includes('итого по разделу') && currentSection) {
-                            // В вашем шаблоне колонки: G (индекс 6) — Стоимость Работы план, H (индекс 7) — Материалы план, I (индекс 8) — Всего
                             let pWorks = parseFloat(row[6]) || 0;
                             let pMat = parseFloat(row[7]) || 0;
                             let pTot = parseFloat(row[8]) || (pWorks + pMat);
@@ -471,12 +464,10 @@
                         }
                     }
 
-                    // Если остался открытый раздел без явного "Итого", сохраним то, что есть
                     if (currentSection) {
                         sections.push(currentSection);
                     }
 
-                    // Если в смете разделы не размечены стандартным текстом, создадим базовый демонстрационный раздел
                     if (sections.length === 0) {
                         sections.push({
                             name: "Основной сметный расчет",
@@ -491,7 +482,7 @@
 
                     const estimateObj = {
                         name: file.name,
-                        data: e.target.result, // Храним массив байт для скачивания
+                        data: e.target.result,
                         date: new Date().toLocaleString()
                     };
 
@@ -499,7 +490,6 @@
                     projects = projects.map(p => {
                         if (p.id === currentActiveProjId) {
                             p.estimate = estimateObj;
-                            // Сохраняем разделы, а факты инициализируем нулями (если их еще не было)
                             p.sections = sections.map(sec => {
                                 const existingSec = p.sections ? p.sections.find(s => s.name === sec.name) : null;
                                 return {
@@ -562,14 +552,12 @@
                             <h4 class="font-bold text-[#166534] text-sm">📌 ${sec.name}</h4>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                            <!-- ПЛАН -->
                             <div class="bg-white p-3 rounded-lg border space-y-1 shadow-sm">
                                 <p class="font-bold text-gray-500 uppercase tracking-wider text-[10px]">📊 План (из сметы)</p>
                                 <p>Работы: <strong class="text-gray-800">${sec.planWorks.toLocaleString('ru-RU')} грн</strong></p>
                                 <p>Материалы: <strong class="text-gray-800">${sec.planMaterials.toLocaleString('ru-RU')} грн</strong></p>
                                 <p class="pt-1 border-t text-sm">Итого план: <strong class="text-[#15803d]">${sec.planTotal.toLocaleString('ru-RU')} грн</strong></p>
                             </div>
-                            <!-- ФАКТ -->
                             <div class="bg-emerald-50/60 p-3 rounded-lg border border-emerald-100 space-y-2">
                                 <p class="font-bold text-[#15803d] uppercase tracking-wider text-[10px]">💰 Факт (реально потрачено)</p>
                                 <div class="grid grid-cols-2 gap-2">
@@ -615,7 +603,6 @@
 
             document.getElementById('modal-estimate-title').innerText = `📄 ${p.estimate.name}`;
             
-            // Превращаем массив байт обратно в Blob для ссылки
             const blob = new Blob([new Uint8Array(p.estimate.data)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const blobUrl = URL.createObjectURL(blob);
 
@@ -792,20 +779,44 @@
             }
         }
 
+        // Заполнение выпадающего списка объектов и динамических разделов заявки
         function updateProjectDropdowns() {
             const projects = JSON.parse(localStorage.getItem('rsk_projects'));
             const orderSelect = document.getElementById('order-proj');
             if (orderSelect) {
                 orderSelect.innerHTML = projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+                // Сразу обновляем разделы для выбранного объекта
+                onOrderProjectChange();
+            }
+        }
+
+        // Обработчик смены объекта в заявке: подгружает разделы сметы выбранного объекта
+        function onOrderProjectChange() {
+            const projectName = document.getElementById('order-proj').value;
+            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const sectionSelect = document.getElementById('order-section');
+            
+            const currentProj = projects.find(p => p.name === projectName);
+
+            if (currentProj && currentProj.sections && currentProj.sections.length > 0) {
+                sectionSelect.innerHTML = currentProj.sections.map(sec => `<option value="${sec.name}">${sec.name}</option>`).join('');
+            } else {
+                sectionSelect.innerHTML = `<option value="">-- Смета не загружена или нет разделов --</option>`;
             }
         }
 
         function submitMaterialOrder(e) {
             e.preventDefault();
+            const sectionVal = document.getElementById('order-section').value;
+            if (!sectionVal) {
+                alert('Пожалуйста, выберите раздел (для этого у выбранного объекта должна быть загружена смета)');
+                return;
+            }
+
             const newOrder = {
                 id: Date.now(),
                 project: document.getElementById('order-proj').value,
-                section: document.getElementById('order-section').value.trim(),
+                section: sectionVal,
                 material: document.getElementById('order-mat').value.trim(),
                 quantity: document.getElementById('order-qty').value.trim(),
                 date: document.getElementById('order-date').value,
