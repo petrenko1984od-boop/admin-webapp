@@ -51,7 +51,7 @@
                 <button onclick="openAddEmployeeModal()" class="bg-[#059669] hover:bg-[#047857] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition">➕ Добавить сотрудника</button>
             </div>
             <div id="employees-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Сюда динамически рендерятся сотрудники -->
+                <!-- Сюда динамически рендерятся карточки-кнопки сотрудников -->
             </div>
         </section>
 
@@ -98,7 +98,7 @@
 
     </main>
 
-    <!-- МОДАЛЬНОЕ ОКНО ОБЪЕКТА -->
+    <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ ОБЪЕКТА -->
     <div id="project-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4">
             <h3 class="text-lg font-bold text-gray-800">🏗 Добавить новый объект</h3>
@@ -123,7 +123,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО СОТРУДНИКА -->
+    <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ СОТРУДНИКА -->
     <div id="employee-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4">
             <h3 class="text-lg font-bold text-gray-800">👥 Добавить сотрудника</h3>
@@ -155,12 +155,42 @@
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО КАРТОЧКИ СОТРУДНИКА (ПОДРОБНО) -->
+    <div id="employee-card-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-lg max-w-lg w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-bold text-gray-800" id="card-modal-title">👤 Карточка сотрудника</h3>
+                <button onclick="closeEmployeeCardModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
+            </div>
+            
+            <div class="space-y-3 text-sm">
+                <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 space-y-1">
+                    <p><strong>ФИО:</strong> <span id="card-emp-name" class="text-gray-900 font-semibold"></span></p>
+                    <p><strong>Должность:</strong> <span id="card-emp-position" class="text-gray-900"></span></p>
+                    <p><strong>Телефон:</strong> <a id="card-emp-phone-link" href="#" class="text-[#059669] hover:underline font-semibold"></a></p>
+                </div>
+
+                <!-- Место под будущую важную информацию -->
+                <div class="border rounded-lg p-3 space-y-2 bg-gray-50">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">📌 Дополнительная информация / Заметки:</p>
+                    <textarea id="card-emp-notes" placeholder="Здесь можно указать паспортные данные, объекты, примечания..." class="w-full border rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-[#10b981] h-24 bg-white"></textarea>
+                    <button onclick="saveEmployeeNotes()" class="bg-[#059669] hover:bg-[#047857] text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow">Сохранить заметки</button>
+                </div>
+            </div>
+
+            <div class="flex justify-between pt-2 border-t">
+                <button onclick="" id="card-delete-btn" class="text-red-500 hover:text-red-700 text-xs font-semibold">🗑 Удалить сотрудника</button>
+                <button onclick="closeEmployeeCardModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-lg text-xs transition">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v3')) {
             const defaultEmployees = [
-                { id: 1, name: "Иван Прорабов", position: "Прораб", phone: "+38 (050) 123-45-67" },
-                { id: 2, name: "Петренко Сергей Николаевич", position: "Прораб", phone: "+380507016548" },
-                { id: 3, name: "Олег Снабженец", position: "Снабженец", phone: "+38 (067) 987-65-43" }
+                { id: 1, name: "Иван Прорабов", position: "Прораб", phone: "+38 (050) 123-45-67", notes: "" },
+                { id: 2, name: "Петренко Сергей Николаевич", position: "Прораб", phone: "+380507016548", notes: "" },
+                { id: 3, name: "Олег Снабженец", position: "Снабженец", phone: "+38 (067) 987-65-43", notes: "" }
             ];
             localStorage.setItem('rsk_employees', JSON.stringify(defaultEmployees));
 
@@ -247,17 +277,53 @@
             }
 
             container.innerHTML = employees.map(emp => `
-                <div class="bg-white rounded-xl shadow-sm border p-4 flex flex-col justify-between space-y-3 border-l-4 border-[#10b981]">
-                    <div class="space-y-1">
+                <button onclick="openEmployeeCard(${emp.id})" class="w-full text-left bg-white rounded-xl shadow-sm border p-4 flex flex-col justify-between space-y-3 border-l-4 border-[#10b981] hover:bg-emerald-50/50 transition cursor-pointer group">
+                    <div class="space-y-1 w-full">
                         <div class="flex justify-between items-start">
-                            <h3 class="font-bold text-[#047857] text-base">👤 ${emp.name}</h3>
-                            <button onclick="deleteEmployee(${emp.id})" class="text-red-400 hover:text-red-600 text-xs">🗑 Удалить</button>
+                            <h3 class="font-bold text-[#047857] text-base group-hover:underline">👤 ${emp.name}</h3>
+                            <span class="text-xs text-[#059669] bg-emerald-100 px-2 py-0.5 rounded font-semibold">Открыть карточку →</span>
                         </div>
                         <p class="text-xs text-gray-600"><strong>Должность:</strong> ${emp.position}</p>
-                        <p class="text-xs text-gray-600"><strong>Телефон:</strong> <a href="tel:${emp.phone}" class="text-[#059669] hover:underline font-semibold">${emp.phone}</a></p>
+                        <p class="text-xs text-gray-600"><strong>Телефон:</strong> <span class="text-[#059669] font-semibold">${emp.phone}</span></p>
                     </div>
-                </div>
+                </button>
             `).join('');
+        }
+
+        let currentActiveEmpId = null;
+
+        function openEmployeeCard(id) {
+            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            const emp = employees.find(e => e.id === id);
+            if (!emp) return;
+
+            currentActiveEmpId = id;
+            document.getElementById('card-emp-name').innerText = emp.name;
+            document.getElementById('card-emp-position').innerText = emp.position;
+            const phoneLink = document.getElementById('card-emp-phone-link');
+            phoneLink.innerText = emp.phone;
+            phoneLink.href = `tel:${emp.phone}`;
+            document.getElementById('card-emp-notes').value = emp.notes || '';
+
+            document.getElementById('card-delete-btn').setAttribute('onclick', `deleteEmployee(${emp.id}); closeEmployeeCardModal();`);
+            document.getElementById('employee-card-modal').classList.remove('hidden');
+        }
+
+        function closeEmployeeCardModal() {
+            document.getElementById('employee-card-modal').classList.add('hidden');
+            currentActiveEmpId = null;
+        }
+
+        function saveEmployeeNotes() {
+            if (!currentActiveEmpId) return;
+            const notes = document.getElementById('card-emp-notes').value;
+            let employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            employees = employees.map(e => {
+                if (e.id === currentActiveEmpId) e.notes = notes;
+                return e;
+            });
+            localStorage.setItem('rsk_employees', JSON.stringify(employees));
+            alert('Заметки успешно сохранены!');
         }
 
         function openAddProjectModal() {
@@ -308,7 +374,7 @@
             const phone = document.getElementById('emp-phone').value.trim();
 
             let employees = JSON.parse(localStorage.getItem('rsk_employees'));
-            employees.push({ id: Date.now(), name, position, phone });
+            employees.push({ id: Date.now(), name, position, phone, notes: "" });
             localStorage.setItem('rsk_employees', JSON.stringify(employees));
 
             document.getElementById('emp-name').value = '';
@@ -405,7 +471,7 @@
 
         function deleteOrder(id) {
             let orders = JSON.parse(localStorage.getItem('rsk_orders')).filter(o => o.id !== id);
-            localStorage.setItem('rsk_orders', JSON.stringify(orders));
+            localStorage.setItem('rsk_orders`, JSON.stringify(orders));
             renderOrders();
         }
 
@@ -418,9 +484,11 @@
 
         function updateOrdersBadgeCount() {
             const orders = JSON.parse(localStorage.getItem('rsk_orders'));
-            const badge = document.getElementById('orders-badge');
-            if (badge) badge.innerText = orders.length;
+            const tag = document.getElementById('orders-badge');
+            if (tag) tag.innerText = orders.length;
         }
+
+        function updateEmployeeBadgeCardCount() {} // заглушка
 
         function updateEmployeeBadgeCount() {
             const employees = JSON.parse(localStorage.getItem('rsk_employees'));
