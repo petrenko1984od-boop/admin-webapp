@@ -168,6 +168,7 @@
                                 <th class="p-2.5">Цена за ед.</th>
                                 <th class="p-2.5">Сумма</th>
                                 <th class="p-2.5">Статус оплаты</th>
+                                <th class="p-2.5">Поставщик</th>
                                 <th class="p-2.5">Объект</th>
                                 <th class="p-2.5">Раздел</th>
                             </tr>
@@ -185,6 +186,7 @@
                                         <option value="В долг">В долг</option>
                                     </select>
                                 </th>
+                                <th class="p-1.5"><input type="text" id="flt-supplier" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
                                 <th class="p-1.5"><input type="text" id="flt-proj" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
                                 <th class="p-1.5"><input type="text" id="flt-sec" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
                             </tr>
@@ -459,6 +461,7 @@
             let list = [];
             orders.forEach(o => {
                 if (o.status === '🟢 Закрыта' && o.items && Array.isArray(o.items)) {
+                    let supplierName = o.purchaseData ? (o.purchaseData.supplier || '') : '';
                     o.items.forEach(it => {
                         let name = typeof it === 'object' ? it.name : it;
                         let qty = typeof it === 'object' ? (it.qty || 1) : 1;
@@ -475,6 +478,7 @@
                             unitPrice: unitPrice,
                             sum: rawPrice,
                             paymentStatus: payment,
+                            supplier: supplierName,
                             project: o.project || '',
                             section: o.section || ''
                         });
@@ -496,6 +500,7 @@
             const fPrice = document.getElementById('flt-price').value.toLowerCase();
             const fSum = document.getElementById('flt-sum').value.toLowerCase();
             const fPayment = document.getElementById('flt-payment').value;
+            const fSupplier = document.getElementById('flt-supplier').value.toLowerCase();
             const fProj = document.getElementById('flt-proj').value.toLowerCase();
             const fSec = document.getElementById('flt-sec').value.toLowerCase();
 
@@ -508,12 +513,13 @@
                        String(item.qty).toLowerCase().includes(fQty) &&
                        String(item.unitPrice).toLowerCase().includes(fPrice) &&
                        String(item.sum).toLowerCase().includes(fSum) &&
+                       String(item.supplier).toLowerCase().includes(fSupplier) &&
                        String(item.project).toLowerCase().includes(fProj) &&
                        String(item.section).toLowerCase().includes(fSec);
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-gray-400 py-6">Нет данных в реестре материалов</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center text-gray-400 py-6">Нет данных в реестре материалов</td></tr>`;
                 return;
             }
 
@@ -531,6 +537,7 @@
                         <td class="p-2.5 whitespace-nowrap">${item.unitPrice.toLocaleString('ru-RU')} грн</td>
                         <td class="p-2.5 whitespace-nowrap font-bold text-[#15803d]">${item.sum.toLocaleString('ru-RU')} грн</td>
                         <td class="p-2.5 whitespace-nowrap">${paymentBadge}</td>
+                        <td class="p-2.5 whitespace-nowrap text-gray-800">${item.supplier}</td>
                         <td class="p-2.5 whitespace-nowrap font-medium text-gray-800">${item.project}</td>
                         <td class="p-2.5 whitespace-nowrap text-gray-600">${item.section}</td>
                     </tr>
@@ -553,6 +560,7 @@
                 "Цена за ед.": item.unitPrice,
                 "Сумма": item.sum,
                 "Статус оплаты": item.paymentStatus,
+                "Поставщик": item.supplier,
                 "Объект": item.project,
                 "Раздел": item.section
             }));
