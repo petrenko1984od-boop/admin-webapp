@@ -8,8 +8,8 @@
 </head>
 <body class="bg-gray-100 font-sans min-h-screen">
 
-    <!-- Шапка навигации с вашей картинкой-логотипом -->
-    <header class="bg-[#059669] text-white shadow-md border-b-4 border-[#10b981]">
+    <!-- Шапка навигации -->
+    <header class="bg-[#15803d] text-white shadow-md border-b-4 border-[#16a34a]">
         <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
             <!-- Логотип и название -->
             <div class="flex items-center gap-3">
@@ -23,10 +23,10 @@
             </div>
             <!-- Навигационные кнопки -->
             <div class="flex flex-wrap gap-2 items-center">
-                <button onclick="switchTab('projects')" id="btn-projects" class="px-3 py-2 bg-[#10b981] rounded-lg text-xs sm:text-sm font-semibold transition shadow">🏗 Объекты</button>
-                <button onclick="switchTab('employees')" id="btn-employees" class="px-3 py-2 bg-[#10b981]/70 hover:bg-[#10b981] rounded-lg text-xs sm:text-sm font-semibold transition shadow">👥 Сотрудники (<span id="employees-badge">0</span>)</button>
-                <button onclick="switchTab('orders')" id="btn-orders" class="px-3 py-2 bg-[#10b981]/70 hover:bg-[#10b981] rounded-lg text-xs sm:text-sm font-semibold transition shadow">📦 Снабжение (<span id="orders-badge">0</span>)</button>
-                <button onclick="switchTab('new-order')" id="btn-new-order" class="px-3 py-2 bg-[#34d399] hover:bg-[#059669] text-white rounded-lg text-xs sm:text-sm font-semibold transition shadow">➕ Новая заявка</button>
+                <button onclick="switchTab('projects')" id="btn-projects" class="px-3 py-2 bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">🏗 Объекты</button>
+                <button onclick="switchTab('employees')" id="btn-employees" class="px-3 py-2 bg-[#16a34a]/70 hover:bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">👥 Сотрудники (<span id="employees-badge">0</span>)</button>
+                <button onclick="switchTab('orders')" id="btn-orders" class="px-3 py-2 bg-[#16a34a]/70 hover:bg-[#16a34a] rounded-lg text-xs sm:text-sm font-semibold transition shadow">📦 Снабжение (<span id="orders-badge">0</span>)</button>
+                <button onclick="switchTab('new-order')" id="btn-new-order" class="px-3 py-2 bg-[#22c55e] hover:bg-[#15803d] text-white rounded-lg text-xs sm:text-sm font-semibold transition shadow">➕ Новая заявка</button>
             </div>
         </div>
     </header>
@@ -35,9 +35,9 @@
 
         <!-- ВКЛАДКА 1: ОБЪЕКТЫ И СМЕТЫ -->
         <section id="tab-projects" class="space-y-4">
-            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border-l-4 border-[#10b981]">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border-l-4 border-[#15803d]">
                 <h2 class="text-lg font-bold text-gray-800">📋 Активные объекты</h2>
-                <button onclick="openAddProjectModal()" class="bg-[#059669] hover:bg-[#047857] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition">➕ Добавить объект</button>
+                <button onclick="openAddProjectModal()" class="bg-[#15803d] hover:bg-[#166534] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition">➕ Добавить объект</button>
             </div>
             <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Сюда динамически рендерятся объекты -->
@@ -46,9 +46,9 @@
 
         <!-- ВКЛАДКА 2: СОТРУДНИКИ -->
         <section id="tab-employees" class="hidden space-y-4">
-            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border-l-4 border-[#10b981]">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border-l-4 border-[#15803d]">
                 <h2 class="text-lg font-bold text-gray-800">👥 Управление сотрудниками</h2>
-                <button onclick="openAddEmployeeModal()" class="bg-[#059669] hover:bg-[#047857] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition">➕ Добавить сотрудника</button>
+                <button onclick="openAddEmployeeModal()" class="bg-[#15803d] hover:bg-[#166534] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition">➕ Добавить сотрудника</button>
             </div>
             <div id="employees-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Сюда динамически рендерятся карточки-кнопки сотрудников -->
@@ -56,7 +56,7 @@
         </section>
 
         <!-- ВКЛАДКА 3: СНАБЖЕНИЕ -->
-        <section id="tab-orders" class="hidden bg-white rounded-xl shadow-md p-6 space-y-4 border-t-4 border-[#10b981]">
+        <section id="tab-orders" class="hidden bg-white rounded-xl shadow-md p-6 space-y-4 border-t-4 border-[#15803d]">
             <div class="flex justify-between items-center border-b pb-3">
                 <h2 class="text-lg font-bold text-gray-800">📦 Контроль заявок на материалы</h2>
                 <button onclick="clearOrders()" class="text-xs text-red-500 hover:underline">Очистить историю</button>
@@ -65,32 +65,32 @@
         </section>
 
         <!-- ВКЛАДКА 4: НОВАЯ ЗАЯВКА -->
-        <section id="tab-new-order" class="hidden bg-white rounded-xl shadow-md p-6 max-w-xl mx-auto space-y-4 border-t-4 border-[#10b981]">
+        <section id="tab-new-order" class="hidden bg-white rounded-xl shadow-md p-6 max-w-xl mx-auto space-y-4 border-t-4 border-[#15803d]">
             <h2 class="text-lg font-bold text-gray-800 border-b pb-3">📝 Оформление заявки на закупку</h2>
             <form onsubmit="submitMaterialOrder(event)" class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Объект:</label>
-                    <select id="order-proj" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#10b981]"></select>
+                    <select id="order-proj" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]"></select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Раздел сметы / Этап:</label>
-                    <input type="text" id="order-section" required placeholder="например, Электрика" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#10b981]">
+                    <input type="text" id="order-section" required placeholder="например, Электрика" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Наименование материала:</label>
-                        <input type="text" id="order-mat" required placeholder="Кабель ВВГнг" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#10b981]">
+                        <input type="text" id="order-mat" required placeholder="Кабель ВВГнг" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Количество и ед.:</label>
-                        <input type="text" id="order-qty" required placeholder="100 м" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#10b981]">
+                        <input type="text" id="order-qty" required placeholder="100 м" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
                     </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Желаемая дата поставки:</label>
-                    <input type="date" id="order-date" required class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#10b981]">
+                    <input type="date" id="order-date" required class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
                 </div>
-                <button type="submit" class="w-full bg-[#059669] hover:bg-[#047857] text-white font-semibold py-2.5 rounded-lg text-sm transition shadow">
+                <button type="submit" class="w-full bg-[#15803d] hover:bg-[#166534] text-white font-semibold py-2.5 rounded-lg text-sm transition shadow">
                     ✅ Отправить заявку в снабжение
                 </button>
             </form>
@@ -105,18 +105,18 @@
             <form onsubmit="saveNewProject(event)" class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Название объекта:</label>
-                    <input type="text" id="new-proj-name" required placeholder="Коттедж" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#10b981]">
+                    <input type="text" id="new-proj-name" required placeholder="Коттедж" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Ответственный прораб:</label>
-                    <select id="new-proj-foreman" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#10b981]"></select>
+                    <select id="new-proj-foreman" required class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]"></select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Разделы сметы (через запятую):</label>
-                    <input type="text" id="new-proj-sections" required placeholder="Фундамент, Стены, Кровля" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#10b981]">
+                    <input type="text" id="new-proj-sections" required placeholder="Фундамент, Стены, Кровля" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
                 </div>
                 <div class="flex gap-2 pt-2">
-                    <button type="submit" class="flex-1 bg-[#059669] hover:bg-[#047857] text-white font-semibold py-2 rounded-lg text-sm transition">Сохранить</button>
+                    <button type="submit" class="flex-1 bg-[#15803d] hover:bg-[#166534] text-white font-semibold py-2 rounded-lg text-sm transition">Сохранить</button>
                     <button type="button" onclick="closeAddProjectModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 rounded-lg text-sm transition">Отмена</button>
                 </div>
             </form>
@@ -130,11 +130,11 @@
             <form onsubmit="saveNewEmployee(event)" class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">ФИО сотрудника:</label>
-                    <input type="text" id="emp-name" required placeholder="Иван Прорабов" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#10b981]">
+                    <input type="text" id="emp-name" required placeholder="Иван Прорабов" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Должность:</label>
-                    <select id="emp-position" class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#10b981]">
+                    <select id="emp-position" class="w-full border rounded-lg p-2.5 text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]">
                         <option value="Директор">Директор</option>
                         <option value="Администратор">Администратор</option>
                         <option value="Главный инженер">Главный инженер</option>
@@ -145,17 +145,17 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Телефон:</label>
-                    <input type="tel" id="emp-phone" required placeholder="+38 (050) 000-00-00" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#10b981]">
+                    <input type="tel" id="emp-phone" required placeholder="+38 (050) 000-00-00" class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
                 </div>
                 <div class="flex gap-2 pt-2">
-                    <button type="submit" class="flex-1 bg-[#059669] hover:bg-[#047857] text-white font-semibold py-2 rounded-lg text-sm transition">Сохранить</button>
+                    <button type="submit" class="flex-1 bg-[#15803d] hover:bg-[#166534] text-white font-semibold py-2 rounded-lg text-sm transition">Сохранить</button>
                     <button type="button" onclick="closeAddEmployeeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 rounded-lg text-sm transition">Отмена</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО КАРТОЧКИ СОТРУДНИКА (ПОДРОБНО) -->
+    <!-- МОДАЛЬНОЕ ОКНО КАРТОЧКИ СОТРУДНИКА -->
     <div id="employee-card-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-lg max-w-lg w-full p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
@@ -167,14 +167,13 @@
                 <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 space-y-1">
                     <p><strong>ФИО:</strong> <span id="card-emp-name" class="text-gray-900 font-semibold"></span></p>
                     <p><strong>Должность:</strong> <span id="card-emp-position" class="text-gray-900"></span></p>
-                    <p><strong>Телефон:</strong> <a id="card-emp-phone-link" href="#" class="text-[#059669] hover:underline font-semibold"></a></p>
+                    <p><strong>Телефон:</strong> <a id="card-emp-phone-link" href="#" class="text-[#15803d] hover:underline font-semibold"></a></p>
                 </div>
 
-                <!-- Место под будущую важную информацию -->
                 <div class="border rounded-lg p-3 space-y-2 bg-gray-50">
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">📌 Дополнительная информация / Заметки:</p>
-                    <textarea id="card-emp-notes" placeholder="Здесь можно указать паспортные данные, объекты, примечания..." class="w-full border rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-[#10b981] h-24 bg-white"></textarea>
-                    <button onclick="saveEmployeeNotes()" class="bg-[#059669] hover:bg-[#047857] text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow">Сохранить заметки</button>
+                    <textarea id="card-emp-notes" placeholder="Здесь можно указать паспортные данные, объекты, примечания..." class="w-full border rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-[#15803d] h-24 bg-white"></textarea>
+                    <button onclick="saveEmployeeNotes()" class="bg-[#15803d] hover:bg-[#166534] text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow">Сохранить заметки</button>
                 </div>
             </div>
 
@@ -213,16 +212,16 @@
                 document.getElementById(`tab-${t}`).classList.add('hidden');
                 const btn = document.getElementById(`btn-${t === 'new-order' ? 'new-order' : t}`);
                 if (btn) {
-                    btn.classList.remove('bg-[#10b981]');
-                    btn.classList.add('bg-[#10b981]/70');
+                    btn.classList.remove('bg-[#16a34a]');
+                    btn.classList.add('bg-[#16a34a]/70');
                 }
             });
 
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             const activeBtn = document.getElementById(`btn-${tabId === 'new-order' ? 'new-order' : tabId}`);
             if (activeBtn) {
-                activeBtn.classList.remove('bg-[#10b981]/70');
-                activeBtn.classList.add('bg-[#10b981]');
+                activeBtn.classList.remove('bg-[#16a34a]/70');
+                activeBtn.classList.add('bg-[#16a34a]');
             }
 
             if (tabId === 'projects') renderProjects();
@@ -246,14 +245,14 @@
                 const foremanPhone = foremanObj ? foremanObj.phone : '';
 
                 return `
-                    <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3 border-l-4 border-[#10b981]">
+                    <div class="bg-white rounded-xl shadow-sm border p-4 space-y-3 border-l-4 border-[#15803d]">
                         <div class="flex justify-between items-start">
-                            <h3 class="font-bold text-[#047857] text-base">🏗 ${p.name}</h3>
+                            <h3 class="font-bold text-[#166534] text-base">🏗 ${p.name}</h3>
                             <button onclick="deleteProject(${p.id})" class="text-red-400 hover:text-red-600 text-xs">🗑 Удалить</button>
                         </div>
                         <div class="text-xs space-y-1 text-gray-600">
                             <p><strong>👨‍💼 Прораб:</strong> <span class="text-gray-900 font-semibold">${p.foreman || 'Не назначен'}</span></p>
-                            ${foremanPhone ? `<p><strong>📞 Телефон:</strong> <a href="tel:${foremanPhone}" class="text-[#059669] hover:underline font-semibold">${foremanPhone}</a></p>` : ''}
+                            ${foremanPhone ? `<p><strong>📞 Телефон:</strong> <a href="tel:${foremanPhone}" class="text-[#15803d] hover:underline font-semibold">${foremanPhone}</a></p>` : ''}
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-gray-500 mb-1">Разделы сметы:</p>
@@ -277,14 +276,14 @@
             }
 
             container.innerHTML = employees.map(emp => `
-                <button onclick="openEmployeeCard(${emp.id})" class="w-full text-left bg-white rounded-xl shadow-sm border p-4 flex flex-col justify-between space-y-3 border-l-4 border-[#10b981] hover:bg-emerald-50/50 transition cursor-pointer group">
+                <button onclick="openEmployeeCard(${emp.id})" class="w-full text-left bg-white rounded-xl shadow-sm border p-4 flex flex-col justify-between space-y-3 border-l-4 border-[#15803d] hover:bg-emerald-50/50 transition cursor-pointer group">
                     <div class="space-y-1 w-full">
                         <div class="flex justify-between items-start">
-                            <h3 class="font-bold text-[#047857] text-base group-hover:underline">👤 ${emp.name}</h3>
-                            <span class="text-xs text-[#059669] bg-emerald-100 px-2 py-0.5 rounded font-semibold">Открыть карточку →</span>
+                            <h3 class="font-bold text-[#166534] text-base group-hover:underline">👤 ${emp.name}</h3>
+                            <span class="text-xs text-[#15803d] bg-emerald-100 px-2 py-0.5 rounded font-semibold">Открыть карточку →</span>
                         </div>
                         <p class="text-xs text-gray-600"><strong>Должность:</strong> ${emp.position}</p>
-                        <p class="text-xs text-gray-600"><strong>Телефон:</strong> <span class="text-[#059669] font-semibold">${emp.phone}</span></p>
+                        <p class="text-xs text-gray-600"><strong>Телефон:</strong> <span class="text-[#15803d] font-semibold">${emp.phone}</span></p>
                     </div>
                 </button>
             `).join('');
@@ -436,10 +435,10 @@
                 <div class="border rounded-xl p-3.5 bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-sm">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-[#047857]">🏗 ${o.project}</span>
+                            <span class="font-bold text-[#166534]">🏗 ${o.project}</span>
                             <span class="text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-700">${o.section}</span>
                         </div>
-                        <p>📦 <b>${o.material}</b> — <span class="text-[#059669] font-semibold">${o.quantity}</span></p>
+                        <p>📦 <b>${o.material}</b> — <span class="text-[#15803d] font-semibold">${o.quantity}</span></p>
                         <p class="text-xs text-gray-500">⏳ Срок: <b>${o.date}</b></p>
                         <div>
                             <span class="inline-block mt-1 px-2 py-0.5 text-xs font-bold rounded ${
