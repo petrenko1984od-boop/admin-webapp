@@ -107,7 +107,7 @@
                 <div class="border-t pt-4 space-y-3">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">📁 Разделы сметы (План / Факт)</h3>
-                        <span class="text-[11px] text-gray-400">Нажмите на раздел, чтобы посмотреть детали закупки</span>
+                        <span class="text-[11px] text-gray-400">Нажмите на раздел, чтобы посмотреть детали закупки и работ</span>
                     </div>
                     <div id="sections-container" class="space-y-3"></div>
                 </div>
@@ -600,26 +600,43 @@
                 sumFactMat += facts.factMaterials;
                 sumFactTotal += factTotal;
 
-                // Индикаторы превышения
                 const isMatOver = facts.factMaterials > sec.planMaterials;
                 const isWorkOver = facts.factWorks > sec.planWorks;
 
                 const matBadgeClass = isMatOver ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-[#15803d] border-emerald-100';
-                const workBadgeClass = isWorkOver ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-[#15803d] border-emerald-100';
                 
                 const matIndicator = isMatOver ? `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold ml-1">⚠️ Перерасход на ${(facts.factMaterials - sec.planMaterials).toLocaleString('ru-RU')} грн</span>` : `<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold ml-1">✔ В норме</span>`;
                 const workIndicator = isWorkOver ? `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold ml-1">⚠️ Перерасход на ${(facts.factWorks - sec.planWorks).toLocaleString('ru-RU')} грн</span>` : `<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold ml-1">✔ В норме</span>`;
 
-                // Формируем HTML для выпадающего списка деталей
+                // Формируем HTML для закупленных материалов
                 let materialsHtml = facts.materialsList.length > 0 ? facts.materialsList.map(m => `
-                    <div class="flex justify-between items-center text-xs py-1.5 border-b border-gray-100 last:border-0">
+                    <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex justify-between items-center text-xs">
                         <div>
-                            <span class="font-semibold text-gray-800">📦 ${m.name}</span>
-                            <span class="text-[10px] text-gray-400 block">Поставщик: ${m.supplier} | Расчет: ${m.payment}</span>
+                            <div class="font-medium text-gray-800">📦 ${m.name}</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">Поставщик: ${m.supplier} | Расчет: <span class="${m.payment.includes('Оплачено') ? 'text-emerald-600' : 'text-amber-600'} font-medium">${m.payment}</span></div>
                         </div>
-                        <span class="font-bold text-[#15803d]">${m.price.toLocaleString('ru-RU')} грн</span>
+                        <div class="text-emerald-600 font-semibold">${m.price.toLocaleString('ru-RU')} грн</div>
                     </div>
                 `).join('') : `<p class="text-xs text-gray-400 italic py-1">Нет закрытых закупок материалов по этому разделу</p>`;
+
+                // Формируем HTML для выполненных работ (реальные примеры позиции по аналогии с материалами)
+                let worksHtml = facts.worksList.length > 0 ? facts.worksList.map(w => `
+                    <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex justify-between items-center text-xs">
+                        <div>
+                            <div class="font-medium text-gray-800">🛠 ${w.name}</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">Статус: <span class="text-emerald-600 font-medium">☑ Выполнено</span></div>
+                        </div>
+                        <div class="text-gray-800 font-semibold">${w.price.toLocaleString('ru-RU')} грн</div>
+                    </div>
+                `).join('') : `
+                    <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex justify-between items-center text-xs">
+                        <div>
+                            <div class="font-medium text-gray-800">🛠 Демонтаж/Подготовка поверхности (м²)</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">Статус: <span class="text-gray-500">Не выполнялось / 0 грн</span></div>
+                        </div>
+                        <div class="text-gray-600 font-semibold">0 грн</div>
+                    </div>
+                `;
 
                 return `
                     <div class="border rounded-xl bg-gray-50 overflow-hidden transition shadow-sm">
@@ -655,11 +672,28 @@
                             </div>
                         </div>
 
-                        <!-- Раскрывающийся блок детализации закупленных материалов -->
-                        <div id="section-details-${idx}" class="hidden bg-white border-t p-4 space-y-2">
-                            <p class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-1">🛒 Детализация закупленных материалов:</p>
-                            <div class="space-y-1">
+                        <!-- Раскрывающийся блок с переключателем детализации закупок и выполненных работ -->
+                        <div id="section-details-${idx}" class="hidden bg-white border-t p-4 space-y-4">
+                            <!-- Кнопки переключения детализации -->
+                            <div class="flex space-x-2">
+                                <button type="button" onclick="switchSectionDetailTab(${idx}, 'materials')" id="btn-mat-${idx}" class="px-3 py-1.5 bg-emerald-600 text-white font-medium rounded-lg text-xs shadow-sm transition">
+                                    📦 Детализация закупок
+                                </button>
+                                <button type="button" onclick="switchSectionDetailTab(${idx}, 'works')" id="btn-work-${idx}" class="px-3 py-1.5 bg-gray-100 text-gray-700 font-medium rounded-lg text-xs shadow-sm transition hover:bg-gray-200">
+                                    🛠 Детализация выполненных работ
+                                </button>
+                            </div>
+
+                            <!-- Секция материалов -->
+                            <div id="sec-materials-${idx}" class="space-y-2">
+                                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Детализация закупленных материалов:</div>
                                 ${materialsHtml}
+                            </div>
+
+                            <!-- Секция выполненных работ -->
+                            <div id="sec-works-${idx}" class="space-y-2 hidden">
+                                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Детализация выполненных работ:</div>
+                                ${worksHtml}
                             </div>
                         </div>
                     </div>
@@ -678,6 +712,25 @@
             } else {
                 detailsEl.classList.add('hidden');
                 arrowEl.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function switchSectionDetailTab(idx, type) {
+            const btnMat = document.getElementById(`btn-mat-${idx}`);
+            const btnWork = document.getElementById(`btn-work-${idx}`);
+            const secMat = document.getElementById(`sec-materials-${idx}`);
+            const secWork = document.getElementById(`sec-works-${idx}`);
+
+            if (type === 'materials') {
+                btnMat.className = "px-3 py-1.5 bg-emerald-600 text-white font-medium rounded-lg text-xs shadow-sm transition";
+                btnWork.className = "px-3 py-1.5 bg-gray-100 text-gray-700 font-medium rounded-lg text-xs shadow-sm transition hover:bg-gray-200";
+                secMat.classList.remove('hidden');
+                secWork.classList.add('hidden');
+            } else {
+                btnWork.className = "px-3 py-1.5 bg-emerald-600 text-white font-medium rounded-lg text-xs shadow-sm transition";
+                btnMat.className = "px-3 py-1.5 bg-gray-100 text-gray-700 font-medium rounded-lg text-xs shadow-sm transition hover:bg-gray-200";
+                secWork.classList.remove('hidden');
+                secMat.classList.add('hidden');
             }
         }
 
