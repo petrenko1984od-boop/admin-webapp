@@ -178,11 +178,11 @@
                                         <option value="">Все</option>
                                     </select>
                                 </th>
-                                <th class="p-1.5"><input type="text" id="flt-name" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
-                                <th class="p-1.5"><input type="text" id="flt-unit" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
-                                <th class="p-1.5"><input type="text" id="flt-qty" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
-                                <th class="p-1.5"><input type="text" id="flt-price" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
-                                <th class="p-1.5"><input type="text" id="flt-sum" oninput="renderMaterialsRegistry()" placeholder="Фильтр..." class="w-full border rounded p-1 text-[11px] font-normal bg-white"></th>
+                                <th class="p-1.5"></th>
+                                <th class="p-1.5"></th>
+                                <th class="p-1.5"></th>
+                                <th class="p-1.5"></th>
+                                <th class="p-1.5"></th>
                                 <th class="p-1.5">
                                     <select id="flt-payment" onchange="renderMaterialsRegistry()" class="w-full border rounded p-1 text-[11px] font-normal bg-white outline-none">
                                         <option value="">Все</option>
@@ -529,11 +529,6 @@
 
             // Значения фильтров
             const fDate = document.getElementById('flt-date').value;
-            const fName = document.getElementById('flt-name').value.toLowerCase();
-            const fUnit = document.getElementById('flt-unit').value.toLowerCase();
-            const fQty = document.getElementById('flt-qty').value.toLowerCase();
-            const fPrice = document.getElementById('flt-price').value.toLowerCase();
-            const fSum = document.getElementById('flt-sum').value.toLowerCase();
             const fPayment = document.getElementById('flt-payment').value;
             const fSupplier = document.getElementById('flt-supplier').value;
             const fProj = document.getElementById('flt-proj').value;
@@ -546,12 +541,7 @@
                 const matchesProj = !fProj || String(item.project) === fProj;
                 const matchesSec = !fSec || String(item.section) === fSec;
 
-                return matchesPayment && matchesDate && matchesSupplier && matchesProj && matchesSec &&
-                       String(item.name).toLowerCase().includes(fName) &&
-                       String(item.unit).toLowerCase().includes(fUnit) &&
-                       String(item.qty).toLowerCase().includes(fQty) &&
-                       String(item.unitPrice).toLowerCase().includes(fPrice) &&
-                       String(item.sum).toLowerCase().includes(fSum);
+                return matchesPayment && matchesDate && matchesSupplier && matchesProj && matchesSec;
             });
 
             if (filtered.length === 0) {
