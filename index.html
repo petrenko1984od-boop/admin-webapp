@@ -8,13 +8,15 @@
 </head>
 <body class="bg-gray-100 font-sans min-h-screen">
 
-    <!-- Шапка навигации с фирменным логотипом и цветами -->
+    <!-- Шапка навигации с иконкой и фирменными цветами -->
     <header class="bg-[#1b4332] text-white shadow-md border-b-4 border-[#2d6a4f]">
         <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
             <!-- Логотип и название -->
             <div class="flex items-center gap-3">
-                <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center">
-                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAAeCAYAAADv5a3XAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAHnSURBVGhD7djbbsIwEAXQY3o7oVz/f5R26SUsj0ZgW8Z2Q57rTqS9n4iS3j82h6q3Wv10P5Y0z1v3S52M98JvKz3vj3Yn35M9w37fV9j1t42718E2T+3n2X1e0+T3v3x9+F2L6f3/O9w/c+tP02+8216n3T9/6q1aR9tfe181+H+e7W33e85s+t+W3n+uTf7j96h7d9XN/nK5r85b1cM61uP95b0v28t0d88L8Pcf0N2n71m94b//uXn2k+1fPvvS6e6+0703816c9r+aV5e4Zz9rL3n90n0r18v3Z95Y0y1v8z2z99r/t+5Y3n1e0b5Yv47zfvTf99H1/a/n7eX+a6f3/d9gPf9j1eM/3n9c/5v9M27l8F+c3nv93bU9f123393v+72N9+V9f727b1N479z9d7/d3r9t/r9v3498/0v3d/Pj1e71e7/f/Z5r85L8c8f3P347T0383b1v+8f3L9u9t2/b2n0t3v34z300f/4f56+q+V+/fvfvW3f3//H422Z9Xf3Tf9/P88vvz09+f/4FvN92bS1u71cAAAAASUVORK5YII5" alt="RSK Logo" class="h-8 w-auto object-contain">
+                <div class="bg-[#2d6a4f] p-2 rounded-xl shadow-inner flex items-center justify-center border border-[#52b788]/30">
+                    <svg class="w-6 h-6 text-[#52b788]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
                 </div>
                 <div>
                     <h1 class="text-base font-bold tracking-wide leading-tight">RSK Odessa</h1>
@@ -221,7 +223,6 @@
             }
 
             container.innerHTML = projects.map(p => {
-                // Ищем телефон прораба, чтобы можно было сразу позвонить из карточки объекта
                 const foremanObj = employees.find(e => e.name === p.foreman);
                 const foremanPhone = foremanObj ? foremanObj.phone : '';
 
@@ -278,13 +279,9 @@
         }
         function closeAddProjectModal() { document.getElementById('project-modal').classList.add('hidden'); }
 
-        // Заполнение выпадающего списка прорабов при создании объекта
         function updateForemanDropdown() {
             const employees = JSON.parse(localStorage.getItem('rsk_employees'));
-            // Фильтруем сотрудников, оставляя тех, кто подходит на роль прораба (или показываем всех)
             const foremen = employees.filter(e => e.position.toLowerCase().includes('прораб') || e.position.toLowerCase().includes('мастер') || e.position.toLowerCase().includes('инженер'));
-            
-            // Если профильных нет, берем вообще всех сотрудников
             const listToRender = foremen.length > 0 ? foremen : employees;
 
             const select = document.getElementById('new-proj-foreman');
@@ -348,17 +345,14 @@
             }
         }
 
-        // Заполнение выпадающего списка объектов в форме заявки
         function updateProjectDropdowns() {
             const projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            
             const orderSelect = document.getElementById('order-proj');
             if (orderSelect) {
                 orderSelect.innerHTML = projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
             }
         }
 
-        // Создание заявки
         function submitMaterialOrder(e) {
             e.preventDefault();
             const newOrder = {
@@ -383,7 +377,6 @@
             switchTab('orders');
         }
 
-        // Рендер заявок
         function renderOrders() {
             const orders = JSON.parse(localStorage.getItem('rsk_orders'));
             const container = document.getElementById('orders-container');
@@ -458,7 +451,6 @@
             if (badge) badge.innerText = employees.length;
         }
 
-        // Первичный запуск счетчиков и рендеринга
         updateOrdersBadgeCount();
         updateEmployeeBadgeCount();
         renderProjects();
