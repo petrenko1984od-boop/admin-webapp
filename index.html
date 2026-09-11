@@ -237,7 +237,6 @@
     <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ СОТРУДНИКА -->
     <div id="employee-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4">
-            <h3 class="text-lg font-bold text-gray-800">👥 Добавить сотрудника</h3>
             <form onsubmit="saveNewEmployee(event)" class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">ФИО сотрудника:</label>
@@ -558,7 +557,7 @@
                 if (o.project === projectName && o.section === sectionName && o.status === '🟢 Закрыта') {
                     if (o.items && Array.isArray(o.items)) {
                         o.items.forEach(it => {
-                            let price = typeof it === 'object' ? (parseFloat(it.price) || 0) : 0;
+                            let price = typeof it === 'object' ? (parseFloat(it.rawPrice) || parseFloat(it.price) || 0) : 0;
                             let name = typeof it === 'object' ? it.name : it;
                             let payment = typeof it === 'object' ? it.payment : 'Оплачено';
                             
@@ -900,15 +899,15 @@
             div.id = `row-${rowId}`;
             div.innerHTML = `
                 <div class="flex-1">
-                    <input type="text" placeholder="Наименование (напр. Кабель ВВГнг)" required class="order-item-name w-full border rounded p-2 text-xs outline-none focus:ring-1 focus:ring-[#15803d] bg-white">
+                    <input type="text" placeholder="Наименование (напр. Ведро)" required class="order-item-name w-full border rounded p-2 text-xs outline-none focus:ring-1 focus:ring-[#15803d] bg-white">
                 </div>
                 <div class="w-20">
                     <input type="number" step="any" placeholder="Кол-во" required class="order-item-qty w-full border rounded p-2 text-xs outline-none focus:ring-1 focus:ring-[#15803d] bg-white">
                 </div>
                 <div class="w-24">
                     <select class="order-item-unit w-full border rounded p-2 text-xs bg-white outline-none focus:ring-1 focus:ring-[#15803d]">
-                        <option value="м">м</option>
                         <option value="шт">шт</option>
+                        <option value="м">м</option>
                         <option value="кг">кг</option>
                         <option value="т">т</option>
                         <option value="м²">м²</option>
@@ -946,7 +945,7 @@
                 const qty = row.querySelector('.order-item-qty').value.trim();
                 const unit = row.querySelector('.order-item-unit').value;
                 if (name && qty) {
-                    itemsList.push(`${name} — ${qty} ${unit}`);
+                    itemsList.push({ name, qty: parseFloat(qty), unit });
                 }
             });
 
@@ -992,9 +991,10 @@
                 let itemsHtml = '';
                 if (o.items && Array.isArray(o.items)) {
                     itemsHtml = o.items.map(it => {
-                        let text = typeof it === 'string' ? it : `${it.name} — ${it.price} грн`;
+                        let text = typeof it === 'object' && it.qty ? `${it.name} — ${it.qty} ${it.unit}` : it;
+                        let pricePart = typeof it === 'object' && it.price ? ` (${it.price})` : '';
                         let paymentBadge = typeof it === 'object' && it.payment ? `<span class="text-[10px] ml-2 px-1.5 py-0.5 rounded ${it.payment.includes('Оплачено') ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}">${it.payment}</span>` : '';
-                        return `<div class="text-gray-800 flex items-center justify-between py-0.5 border-b border-gray-100 last:border-0"><span>📦 <b>${text}</b></span> ${paymentBadge}</div>`;
+                        return `<div class="text-gray-800 flex items-center justify-between py-0.5 border-b border-gray-100 last:border-0"><span>📦 <b>${text}${pricePart}</b></span> ${paymentBadge}</div>`;
                     }).join('');
                 }
 
@@ -1062,17 +1062,19 @@
                 itemsList = order.items;
             }
 
-            container.innerHTML = itemsList.map((itemText) => {
-                // Корректно извлекаем чистое название материала из строки заявки
-                let cleanName = typeof itemText === 'string' ? itemText.split(' — ')[0] : itemText;
+            container.innerHTML = itemsList.map((item) => {
+                let name = typeof item === 'object' ? item.name : (item.split(' — ')[0] || item);
+                let qty = typeof item === 'object' ? item.qty : (parseFloat(item.split(' — ')[1]) || 1);
+                let unit = typeof item === 'object' ? item.unit : (item.split(' ')[2] || 'шт');
+
                 return `
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-white p-3 rounded-lg border modal-item-row" data-original-name="${cleanName}">
-                        <span class="text-xs text-gray-800 font-semibold flex-1">📦 ${itemText}</span>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-white p-3 rounded-lg border modal-item-row" data-item-name="${name}" data-item-qty="${qty}" data-item-unit="${unit}">
+                        <span class="text-xs text-gray-800 font-semibold flex-1">📦 ${name} — <b>${qty} ${unit}</b></span>
                         <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <input type="number" step="0.01" placeholder="Цена, грн" oninput="calculateModalTotal()" class="modal-item-price w-28 border rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-[#15803d]" required>
-                            <select class="modal-item-payment w-40 border rounded p-1.5 text-xs bg-white outline-none focus:ring-1 focus:ring-[#15803d]">
-                                <option value="✅ Оплачено">✅ Оплачено сразу</option>
-                                <option value="⏳ В долг">⏳ В долг / Отсрочка</option>
+                            <input type="number" step="0.01" placeholder="Цена за ед., грн" oninput="calculateModalTotal()" class="modal-item-price w-32 border rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-[#15803d]" required>
+                            <select class="modal-item-payment w-36 border rounded p-1.5 text-xs bg-white outline-none focus:ring-1 focus:ring-[#15803d]">
+                                <option value="✅ Оплачено">✅ Оплачено</option>
+                                <option value="⏳ В долг">⏳ В долг</option>
                             </select>
                         </div>
                     </div>
@@ -1084,11 +1086,12 @@
         }
 
         function calculateModalTotal() {
-            const priceInputs = document.querySelectorAll('.modal-item-price');
+            const rows = document.querySelectorAll('.modal-item-row');
             let total = 0;
-            priceInputs.forEach(input => {
-                const val = parseFloat(input.value) || 0;
-                total += val;
+            rows.forEach(row => {
+                const qty = parseFloat(row.getAttribute('data-item-qty')) || 1;
+                const unitPrice = parseFloat(row.querySelector('.modal-item-price').value) || 0;
+                total += qty * unitPrice;
             });
             document.getElementById('modal-order-total-sum-label').innerText = `${total.toLocaleString('ru-RU')} грн`;
         }
@@ -1107,15 +1110,21 @@
             let updatedItemsList = [];
 
             itemRows.forEach((row) => {
-                const itemName = row.getAttribute('data-original-name');
-                const price = parseFloat(row.querySelector('.modal-item-price').value) || 0;
+                const name = row.getAttribute('data-item-name');
+                const qty = parseFloat(row.getAttribute('data-item-qty')) || 1;
+                const unit = row.getAttribute('data-item-unit');
+                const unitPrice = parseFloat(row.querySelector('.modal-item-price').value) || 0;
                 const payment = row.querySelector('.modal-item-payment').value;
-                totalSum += price;
+                
+                const itemTotalSum = qty * unitPrice;
+                totalSum += itemTotalSum;
 
                 updatedItemsList.push({
-                    name: itemName,
-                    price: `${price} грн`, // Сохраняем цену в красивом формате для отображения
-                    rawPrice: price,         // Числовое значение для расчетов в факте раздела
+                    name: name,
+                    qty: qty,
+                    unit: unit,
+                    price: `${itemTotalSum.toLocaleString('ru-RU')} грн (${unitPrice} грн/${unit})`,
+                    rawPrice: itemTotalSum,
                     payment: payment
                 });
             });
