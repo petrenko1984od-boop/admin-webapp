@@ -44,6 +44,46 @@
             </div>
         </section>
 
+        <!-- ЭКРАН КАРТОЧКИ ОБЪЕКТА (НА ВСЮ СТРАНИЦУ) -->
+        <section id="tab-project-detail" class="hidden space-y-4">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border-l-4 border-[#15803d]">
+                <button onclick="switchTab('projects')" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                    ← Назад к списку объектов
+                </button>
+                <button onclick="" id="card-proj-delete-btn" class="text-red-500 hover:text-red-700 text-xs font-semibold">🗑 Удалить объект</button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-6 space-y-6 border-t-4 border-[#15803d]">
+                <div class="border-b pb-4">
+                    <h2 class="text-xl font-bold text-[#166534]" id="card-proj-title">🏗 Название объекта</h2>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 space-y-2">
+                        <p class="text-xs font-bold text-[#15803d] uppercase tracking-wider">👨‍💼 Ответственный прораб</p>
+                        <p class="text-sm"><strong>ФИО:</strong> <span id="card-proj-foreman" class="text-gray-900 font-semibold"></span></p>
+                        <p class="text-sm"><strong>Телефон:</strong> <a id="card-proj-phone-link" href="#" class="text-[#15803d] hover:underline font-semibold"></a></p>
+                    </div>
+
+                    <div class="border rounded-xl p-4 space-y-2 bg-gray-50 flex flex-col justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">📌 Заметки по объекту:</p>
+                            <textarea id="card-proj-notes" placeholder="Адрес, состояние стройки, примечания..." class="w-full border rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-[#15803d] h-20 bg-white"></textarea>
+                        </div>
+                        <button onclick="saveProjectNotes()" class="w-full bg-[#15803d] hover:bg-[#166534] text-white text-xs font-semibold py-2 rounded-lg transition shadow">Сохранить заметки</button>
+                    </div>
+                </div>
+
+                <!-- Место для будущего функционала объекта -->
+                <div class="border-t pt-4 space-y-3">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">🛠 Дополнительный функционал объекта</h3>
+                    <div class="p-4 bg-gray-50 rounded-xl border border-dashed text-center text-gray-400 text-xs">
+                        Здесь в следующих шагах мы разместим сметы, этапы, файлы или привязанные материалы этого объекта.
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ВКЛАДКА 2: СОТРУДНИКИ -->
         <section id="tab-employees" class="hidden space-y-4">
             <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border-l-4 border-[#15803d]">
@@ -119,35 +159,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО КАРТОЧКИ ОБЪЕКТА -->
-    <div id="project-card-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl shadow-lg max-w-lg w-full p-6 space-y-4">
-            <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="text-lg font-bold text-gray-800" id="card-proj-modal-title">🏗 Карточка объекта</h3>
-                <button onclick="closeProjectCardModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
-            </div>
-            
-            <div class="space-y-3 text-sm">
-                <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 space-y-1">
-                    <p><strong>Название:</strong> <span id="card-proj-name" class="text-gray-900 font-semibold"></span></p>
-                    <p><strong>Прораб:</strong> <span id="card-proj-foreman" class="text-gray-900 font-semibold"></span></p>
-                    <p><strong>Телефон:</strong> <a id="card-proj-phone-link" href="#" class="text-[#15803d] hover:underline font-semibold"></a></p>
-                </div>
-
-                <div class="border rounded-lg p-3 space-y-2 bg-gray-50">
-                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">📌 Заметки по объекту:</p>
-                    <textarea id="card-proj-notes" placeholder="Адрес, состояние стройки, примечания..." class="w-full border rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-[#15803d] h-24 bg-white"></textarea>
-                    <button onclick="saveProjectNotes()" class="bg-[#15803d] hover:bg-[#166534] text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow">Сохранить заметки</button>
-                </div>
-            </div>
-
-            <div class="flex justify-between pt-2 border-t">
-                <button onclick="" id="card-proj-delete-btn" class="text-red-500 hover:text-red-700 text-xs font-semibold">🗑 Удалить объект</button>
-                <button onclick="closeProjectCardModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-lg text-xs transition">Закрыть</button>
-            </div>
-        </div>
-    </div>
-
     <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ СОТРУДНИКА -->
     <div id="employee-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4">
@@ -210,7 +221,7 @@
     </div>
 
     <script>
-        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v4')) {
+        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v5')) {
             const defaultEmployees = [
                 { id: 1, name: "Иван Прорабов", position: "Прораб", phone: "+38 (050) 123-45-67", notes: "" },
                 { id: 2, name: "Петренко Сергей Николаевич", position: "Прораб", phone: "+380507016548", notes: "" },
@@ -223,7 +234,7 @@
                 { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", notes: "" }
             ];
             localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
-            localStorage.setItem('rsk_projects_v4', 'true');
+            localStorage.setItem('rsk_projects_v5', 'true');
         }
 
         if (!localStorage.getItem('rsk_orders')) {
@@ -233,20 +244,34 @@
         document.getElementById('order-date').valueAsDate = new Date();
 
         function switchTab(tabId) {
-            ['projects', 'employees', 'orders', 'new-order'].forEach(t => {
-                document.getElementById(`tab-${t}`).classList.add('hidden');
-                const btn = document.getElementById(`btn-${t === 'new-order' ? 'new-order' : t}`);
-                if (btn) {
-                    btn.classList.remove('bg-[#16a34a]');
-                    btn.classList.add('bg-[#16a34a]/70');
+            ['projects', 'project-detail', 'employees', 'orders', 'new-order'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if (el) el.classList.add('hidden');
+                
+                if (t !== 'project-detail') {
+                    const btn = document.getElementById(`btn-${t === 'new-order' ? 'new-order' : t}`);
+                    if (btn) {
+                        btn.classList.remove('bg-[#16a34a]');
+                        btn.classList.add('bg-[#16a34a]/70');
+                    }
                 }
             });
 
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`btn-${tabId === 'new-order' ? 'new-order' : tabId}`);
-            if (activeBtn) {
-                activeBtn.classList.remove('bg-[#16a34a]/70');
-                activeBtn.classList.add('bg-[#16a34a]');
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) targetTab.classList.remove('hidden');
+
+            if (tabId === 'projects' || tabId === 'project-detail') {
+                const activeBtn = document.getElementById(`btn-projects`);
+                if (activeBtn) {
+                    activeBtn.classList.remove('bg-[#16a34a]/70');
+                    activeBtn.classList.add('bg-[#16a34a]');
+                }
+            } else {
+                const activeBtn = document.getElementById(`btn-${tabId === 'new-order' ? 'new-order' : tabId}`);
+                if (activeBtn) {
+                    activeBtn.classList.remove('bg-[#16a34a]/70');
+                    activeBtn.classList.add('bg-[#16a34a]');
+                }
             }
 
             if (tabId === 'projects') renderProjects();
@@ -271,11 +296,11 @@
                 const foremanPhone = foremanObj ? foremanObj.phone : '';
 
                 return `
-                    <button onclick="openProjectCard(${p.id})" class="w-full text-left bg-white rounded-xl shadow-sm border p-4 flex flex-col justify-between space-y-3 border-l-4 border-[#15803d] hover:bg-emerald-50/50 transition cursor-pointer group">
+                    <button onclick="openProjectDetail(${p.id})" class="w-full text-left bg-white rounded-xl shadow-sm border p-4 flex flex-col justify-between space-y-3 border-l-4 border-[#15803d] hover:bg-emerald-50/50 transition cursor-pointer group">
                         <div class="space-y-1 w-full">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-bold text-[#166534] text-base group-hover:underline">🏗 ${p.name}</h3>
-                                <span class="text-xs text-[#15803d] bg-emerald-100 px-2 py-0.5 rounded font-semibold">Открыть карточку →</span>
+                                <span class="text-xs text-[#15803d] bg-emerald-100 px-2 py-0.5 rounded font-semibold">Открыть →</span>
                             </div>
                             <p class="text-xs text-gray-600"><strong>👨‍💼 Прораб:</strong> <span class="text-gray-900 font-semibold">${p.foreman || 'Не назначен'}</span></p>
                             ${foremanPhone ? `<p class="text-xs text-gray-600"><strong>📞 Телефон:</strong> <span class="text-[#15803d] font-semibold">${foremanPhone}</span></p>` : ''}
@@ -287,14 +312,14 @@
 
         let currentActiveProjId = null;
 
-        function openProjectCard(id) {
+        function openProjectDetail(id) {
             const projects = JSON.parse(localStorage.getItem('rsk_projects'));
             const employees = JSON.parse(localStorage.getItem('rsk_employees'));
             const p = projects.find(item => item.id === id);
             if (!p) return;
 
             currentActiveProjId = id;
-            document.getElementById('card-proj-name').innerText = p.name;
+            document.getElementById('card-proj-title').innerText = `🏗 ${p.name}`;
             document.getElementById('card-proj-foreman').innerText = p.foreman || 'Не назначен';
             
             const foremanObj = employees.find(e => e.name === p.foreman);
@@ -308,13 +333,9 @@
             }
 
             document.getElementById('card-proj-notes').value = p.notes || '';
-            document.getElementById('card-proj-delete-btn').setAttribute('onclick', `deleteProject(${p.id}); closeProjectCardModal();`);
-            document.getElementById('project-card-modal').classList.remove('hidden');
-        }
-
-        function closeProjectCardModal() {
-            document.getElementById('project-card-modal').classList.add('hidden');
-            currentActiveProjId = null;
+            document.getElementById('card-proj-delete-btn').setAttribute('onclick', `deleteProject(${p.id})`);
+            
+            switchTab('project-detail');
         }
 
         function saveProjectNotes() {
@@ -421,7 +442,7 @@
             if (confirm('Удалить объект?')) {
                 let projects = JSON.parse(localStorage.getItem('rsk_projects')).filter(p => p.id !== id);
                 localStorage.setItem('rsk_projects', JSON.stringify(projects));
-                renderProjects();
+                switchTab('projects');
             }
         }
 
