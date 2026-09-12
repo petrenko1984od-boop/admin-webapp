@@ -65,107 +65,137 @@
             </div>
         </div>
 
-        <!-- Двухколоночный блок: Прораб и Чек-лист -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            
-            <!-- Левая колонка: Прораб -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between">
-                <div>
-                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                        <i class="fa-solid fa-user-tie text-emerald-600 mr-1.5"></i> Ответственный прораб
-                    </div>
-                    <div class="space-y-2">
-                        <p class="text-base"><strong class="text-gray-700">ФИО:</strong> Иван Прорабов</p>
-                        <p class="text-base"><strong class="text-gray-700">Телефон:</strong> <a href="tel:+380501234567" class="text-emerald-700 hover:underline">+38 (050) 123-45-67</a></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Правая колонка: Чек-лист / Задачи по объекту -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
-                <div class="flex justify-between items-center mb-3">
-                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center">
-                        <i class="fa-solid fa-list-check text-emerald-600 mr-1.5"></i> Чек-лист объекта
-                    </div>
-                    <div class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full" id="task-counter">
-                        0 / 0 выполнено
-                    </div>
-                </div>
-
-                <!-- Тонкий прогресс-бар -->
-                <div class="w-full bg-gray-100 rounded-full h-1.5 mb-4 overflow-hidden">
-                    <div id="task-progress" class="bg-emerald-500 h-1.5 transition-all duration-300" style="width: 0%"></div>
-                </div>
-
-                <!-- Строка ввода новой задачи -->
-                <div class="relative mb-4">
-                    <input type="text" id="new-task-input" placeholder="+ Добавить новую задачу (нажмите Enter)..." 
-                           class="w-full pl-3 pr-10 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:bg-white transition"
-                           onkeypress="handleTaskKeyPress(event)">
-                    <button onclick="addNewTask()" class="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-600 hover:text-emerald-700 p-1">
-                        <i class="fa-solid fa-plus font-bold"></i>
-                    </button>
-                </div>
-
-                <!-- Список задач -->
-                <div id="tasks-container" class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    <!-- Задачи добавляются динамически через JS -->
-                </div>
-            </div>
-
+        <!-- Кнопки переключения разделов внутри объекта -->
+        <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-4">
+            <button onclick="switchSubTab('info')" id="subnav-info" class="px-4 py-2 rounded-lg text-sm font-medium transition bg-emerald-700 text-white shadow-sm">
+                <i class="fa-solid fa-circle-info mr-2"></i> Общая информация
+            </button>
+            <button onclick="switchSubTab('files')" id="subnav-files" class="px-4 py-2 rounded-lg text-sm font-medium transition bg-white text-gray-600 border border-gray-300 hover:bg-gray-50">
+                <i class="fa-solid fa-folder-open mr-2"></i> Файлы и сметы
+            </button>
+            <button onclick="switchSubTab('schedule')" id="subnav-schedule" class="px-4 py-2 rounded-lg text-sm font-medium transition bg-white text-gray-600 border border-gray-300 hover:bg-gray-50">
+                <i class="fa-solid fa-calendar-days mr-2"></i> График работ
+            </button>
         </div>
 
-        <!-- Блок загрузки файла сметы -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-            <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                <i class="fa-solid fa-file-excel text-emerald-600 mr-1.5"></i> Загрузка файла сметы (Excel)
-            </h3>
-            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-                <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-file-excel text-2xl text-emerald-600"></i>
+        <!-- ВКЛАДКА 1: Общая информация (Прораб + Чек-лист + Разделы сметы) -->
+        <div id="tab-info" class="space-y-6">
+            <!-- Двухколоночный блок: Прораб и Чек-лист -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Левая колонка: Прораб -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-800">№08092026-П, ЖК Дайберг, уч.170.xlsx</p>
-                        <p class="text-xs text-gray-400">Загружено: 11.09.2026, 23:37:53</p>
+                        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                            <i class="fa-solid fa-user-tie text-emerald-600 mr-1.5"></i> Ответственный прораб
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-base"><strong class="text-gray-700">ФИО:</strong> Иван Прорабов</p>
+                            <p class="text-base"><strong class="text-gray-700">Телефон:</strong> <a href="tel:+380501234567" class="text-emerald-700 hover:underline">+38 (050) 123-45-67</a></p>
+                        </div>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <button class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-100 transition">
-                        <i class="fa-solid fa-eye mr-1"></i> Оригинал файла
-                    </button>
-                    <button class="text-gray-400 hover:text-red-600 p-2 transition">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+
+                <!-- Правая колонка: Чек-лист / Задачи по объекту -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center">
+                            <i class="fa-solid fa-list-check text-emerald-600 mr-1.5"></i> Чек-лист объекта
+                        </div>
+                        <div class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full" id="task-counter">
+                            0 / 0 выполнено
+                        </div>
+                    </div>
+
+                    <!-- Тонкий прогресс-бар -->
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 mb-4 overflow-hidden">
+                        <div id="task-progress" class="bg-emerald-500 h-1.5 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+
+                    <!-- Строка ввода новой задачи -->
+                    <div class="relative mb-4">
+                        <input type="text" id="new-task-input" placeholder="+ Добавить новую задачу (нажмите Enter)..." 
+                               class="w-full pl-3 pr-10 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:bg-white transition"
+                               onkeypress="handleTaskKeyPress(event)">
+                        <button onclick="addNewTask()" class="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-600 hover:text-emerald-700 p-1">
+                            <i class="fa-solid fa-plus font-bold"></i>
+                        </button>
+                    </div>
+
+                    <!-- Список задач -->
+                    <div id="tasks-container" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <!-- Задачи добавляются динамически -->
+                    </div>
                 </div>
             </div>
-            
-            <div class="flex flex-col sm:flex-row items-center gap-3">
-                <label class="w-full sm:w-auto flex-1 border border-dashed border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50 cursor-pointer hover:bg-gray-100 transition text-sm text-gray-500 text-center">
-                    <i class="fa-solid fa-cloud-arrow-up mr-2 text-emerald-600"></i> Выберите файл <span id="file-chosen" class="text-gray-400 ml-1">Файл не выбран</span>
-                    <input type="file" id="excel-file-input" class="hidden" onchange="updateFileName(this)">
-                </label>
-                <button class="w-full sm:w-auto bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm flex items-center justify-center">
-                    <i class="fa-solid fa-gears mr-2"></i> Загрузить и разобрать смету
-                </button>
+
+            <!-- Разделы сметы -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+                        <i class="fa-solid fa-folder-tree text-emerald-600 mr-1.5"></i> Разделы сметы (План / Факт)
+                    </h3>
+                    <span class="text-xs text-gray-400">Нажмите подробнее, чтобы посмотреть детали оплат</span>
+                </div>
+                <div class="border border-emerald-100 bg-emerald-50/40 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-caret-down text-emerald-700"></i>
+                        <span class="font-medium text-emerald-900 text-sm">Раздел: Демонтажно-подготовительные работы</span>
+                    </div>
+                    <div class="flex items-center justify-between w-full sm:w-auto gap-4">
+                        <span class="text-sm text-gray-700">План: <strong class="text-gray-900">3 441 грн</strong> | Факт: <strong class="text-emerald-700">51 050 грн</strong></span>
+                        <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded transition font-medium">Подробнее</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Разделы сметы -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">
-                    <i class="fa-solid fa-folder-tree text-emerald-600 mr-1.5"></i> Разделы сметы (План / Факт)
+        <!-- ВКЛАДКА 2: Файлы и сметы -->
+        <div id="tab-files" class="space-y-6 hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                    <i class="fa-solid fa-file-excel text-emerald-600 mr-1.5"></i> Загрузка файла сметы и проектов
                 </h3>
-                <span class="text-xs text-gray-400">Нажмите подробнее, чтобы посмотреть детали оплат</span>
+                <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-file-excel text-2xl text-emerald-600"></i>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">№08092026-П, ЖК Дайберг, уч.170.xlsx</p>
+                            <p class="text-xs text-gray-400">Загружено: 11.09.2026, 23:37:53</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-100 transition">
+                            <i class="fa-solid fa-eye mr-1"></i> Оригинал файла
+                        </button>
+                        <button class="text-gray-400 hover:text-red-600 p-2 transition">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row items-center gap-3">
+                    <label class="w-full sm:w-auto flex-1 border border-dashed border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50 cursor-pointer hover:bg-gray-100 transition text-sm text-gray-500 text-center">
+                        <i class="fa-solid fa-cloud-arrow-up mr-2 text-emerald-600"></i> Выберите файл (смета, проект...) <span id="file-chosen" class="text-gray-400 ml-1">Файл не выбран</span>
+                        <input type="file" id="excel-file-input" class="hidden" onchange="updateFileName(this)">
+                    </label>
+                    <button class="w-full sm:w-auto bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm flex items-center justify-center">
+                        <i class="fa-solid fa-gears mr-2"></i> Загрузить файл
+                    </button>
+                </div>
             </div>
-            <div class="border border-emerald-100 bg-emerald-50/40 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-caret-down text-emerald-700"></i>
-                    <span class="font-medium text-emerald-900 text-sm">Раздел: Демонтажно-подготовительные работы</span>
+        </div>
+
+        <!-- ВКЛАДКА 3: График работ (Пока пустой) -->
+        <div id="tab-schedule" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                    <i class="fa-solid fa-calendar-days"></i>
                 </div>
-                <div class="flex items-center justify-between w-full sm:w-auto gap-4">
-                    <span class="text-sm text-gray-700">План: <strong class="text-gray-900">3 441 грн</strong> | Факт: <strong class="text-emerald-700">51 050 грн</strong></span>
-                    <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded transition font-medium">Подробнее</button>
-                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-1">График работ пока пустой</h3>
+                <p class="text-sm text-gray-400 max-w-sm mx-auto mb-6">Здесь в будущем будет отображаться диаграмма Ганта, этапы строительства и сроки выполнения задач.</p>
+                <button class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                    <i class="fa-solid fa-plus mr-2"></i> Добавить этап работ
+                </button>
             </div>
         </div>
 
@@ -178,23 +208,40 @@
 
     <!-- JavaScript логика -->
     <script>
-        // Состояние чек-листа задач для текущего объекта
+        // Состояние чек-листа задач
         let tasks = [
-            id = 1, text: "Согласовать подключение электричества с РЭС", completed: true },
-            { id = 2, text: "Завезти строительные леса и расходники", completed: false },
-            { id = 3, text: "Проверить уровень фундамента по отметкам", completed: false }
+            { id: 1, text: "Согласовать подключение электричества с РЭС", completed: true },
+            { id: 2, text: "Завезти строительные леса и расходники", completed: false },
+            { id: 3, text: "Проверить уровень фундамента по отметкам", completed: false }
         ];
 
-        // Инициализация при загрузке страницы
         document.addEventListener("DOMContentLoaded", () => {
             renderTasks();
         });
+
+        // Переключение внутренних вкладок объекта
+        function switchSubTab(tabName) {
+            const tabs = ['info', 'files', 'schedule'];
+            tabs.forEach(t => {
+                const content = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`subnav-${t}`);
+                
+                if (t === tabName) {
+                    content.classList.remove('hidden');
+                    btn.className = "px-4 py-2 rounded-lg text-sm font-medium transition bg-emerald-700 text-white shadow-sm flex items-center";
+                } else {
+                    content.classList.add('hidden');
+                    btn.className = "px-4 py-2 rounded-lg text-sm font-medium transition bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 flex items-center";
+                }
+            });
+        }
 
         function renderTasks() {
             const container = document.getElementById("tasks-container");
             const counter = document.getElementById("task-counter");
             const progressBar = document.getElementById("task-progress");
 
+            if (!container) return;
             container.innerHTML = "";
 
             if (tasks.length === 0) {
@@ -204,9 +251,7 @@
                 return;
             }
 
-            // Сортировка: активные сверху, выполненные внизу
             const sortedTasks = [...tasks].sort((a, b) => a.completed - b.completed);
-
             const completedCount = tasks.filter(t => t.completed).length;
             const totalCount = tasks.length;
             const percent = Math.round((completedCount / totalCount) * 100);
@@ -224,7 +269,7 @@
                         <span class="text-sm ${task.completed ? 'line-through text-gray-400' : 'text-gray-800'}">${escapeHtml(task.text)}</span>
                     </label>
                     <button onclick="deleteTask(${task.id})" class="text-gray-300 hover:text-red-500 px-2 py-1 transition text-xs">
-                        <i class="fa-solid xmark fa-xmark"></i>
+                        <i class="fa-solid fa-xmark"></i>
                     </button>
                 `;
                 container.appendChild(item);
@@ -280,7 +325,6 @@
         }
 
         function switchTab(tabId) {
-            // Переключение вкладок (заглушка навигации)
             ['objects', 'employees', 'supply', 'registry'].forEach(id => {
                 const btn = document.getElementById(`nav-${id}`);
                 if (btn) {
