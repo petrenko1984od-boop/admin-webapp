@@ -55,9 +55,7 @@
             <div class="bg-white rounded-xl shadow-md p-6 space-y-6 border-t-4 border-[#15803d]">
                 <div class="border-b pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <h2 class="text-xl font-bold text-[#166534]" id="card-proj-title">🏗 Название объекта</h2>
-                    <div id="card-proj-totals" class="hidden">
-                        <!-- Скрыто или используется в плашке ниже -->
-                    </div>
+                    <div id="card-proj-totals" class="hidden"></div>
                 </div>
 
                 <!-- 4 КНОПКИ ПЕРЕКЛЮЧЕНИЯ ВНУТРИ КАРТОЧКИ ОБЪЕКТА -->
@@ -110,7 +108,7 @@
                         </div>
                     </div>
 
-                    <!-- БЛОК: ЗАДАЧИ ПРОРАБУ (На всю ширину под блоками информации) -->
+                    <!-- БЛОК: ЗАДАЧИ ПРОРАБУ -->
                     <div class="task-manager-card bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4 mt-4">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-3">
                             <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
@@ -134,9 +132,7 @@
                         </div>
 
                         <!-- Список задач -->
-                        <div id="taskList" class="flex flex-col gap-2 pt-2">
-                            <!-- Задачи генерируются динамически -->
-                        </div>
+                        <div id="taskList" class="flex flex-col gap-2 pt-2"></div>
                     </div>
                 </div>
 
@@ -284,9 +280,7 @@
                                 </th>
                             </tr>
                         </thead>
-                        <tbody id="registry-materials-tbody" class="divide-y">
-                            <!-- Данные генерируются динамически -->
-                        </tbody>
+                        <tbody id="registry-materials-tbody" class="divide-y"></tbody>
                     </table>
                 </div>
             </div>
@@ -348,9 +342,7 @@
                 <button onclick="closeMaterialCardModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
             </div>
             
-            <div id="material-card-content" class="space-y-3 text-xs sm:text-sm">
-                <!-- Заполняется динамически -->
-            </div>
+            <div id="material-card-content" class="space-y-3 text-xs sm:text-sm"></div>
 
             <div class="pt-2 border-t flex justify-end">
                 <button onclick="closeMaterialCardModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-lg text-xs transition">Закрыть</button>
@@ -558,7 +550,6 @@
             }
         }
 
-        // Функция переключения подвкладок внутри карточки объекта
         function switchProjectSubTab(subId) {
             ['info', 'planfact', 'files', 'schedule'].forEach(s => {
                 const el = document.getElementById(`proj-subtab-${s}`);
@@ -835,11 +826,10 @@
             renderEstimateUI(p);
             renderSectionsUI(p);
             renderTasks(p);
-            switchProjectSubTab('info'); // Сбрасываем подвкладку на общую информацию при открытии
+            switchProjectSubTab('info');
             switchTab('project-detail');
         }
 
-        // ЛОГИКА БЛОКА «ЗАДАЧИ ПРОРАБУ»
         function addTask() {
             if (!currentActiveProjId) return;
             const textInput = document.getElementById('taskInput');
@@ -873,10 +863,6 @@
             });
 
             localStorage.setItem('rsk_projects', JSON.stringify(projects));
-            
-            // Симуляция отправки в Telegram/Viber бот прорабу
-            console.log('🤖 Уведомление отправлено прорабу в Telegram/Viber по объекту:', currentActiveProjId);
-
             textInput.value = '';
             dateInput.value = '';
             const updatedProj = projects.find(p => p.id === currentActiveProjId);
@@ -900,12 +886,9 @@
                     priorityBadge = `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Важный</span>`;
                 }
 
-                // Проверка дедлайна
                 let isOverdue = false;
                 if (task.date && task.date !== 'Без дедлайна' && !task.completed) {
-                    if (task.date < todayStr) {
-                        isOverdue = true;
-                    }
+                    if (task.date < todayStr) isOverdue = true;
                 }
 
                 let deadlineBadgeClass = isOverdue ? 'bg-red-100 text-red-700 font-bold border border-red-300' : 'bg-amber-50 text-[#856404] border border-amber-200';
@@ -1062,15 +1045,8 @@
                         let rowText = String(row[1] || row[0] || '').trim();
 
                         if (rowText.toLowerCase().includes('раздел:')) {
-                            if (currentSection) {
-                                sections.push(currentSection);
-                            }
-                            currentSection = {
-                                name: rowText,
-                                planWorks: 0,
-                                planMaterials: 0,
-                                planTotal: 0
-                            };
+                            if (currentSection) sections.push(currentSection);
+                            currentSection = { name: rowText, planWorks: 0, planMaterials: 0, planTotal: 0 };
                             continue;
                         }
 
@@ -1088,37 +1064,24 @@
                         }
                     }
 
-                    if (currentSection) {
-                        sections.push(currentSection);
-                    }
+                    if (currentSection) sections.push(currentSection);
 
                     if (sections.length === 0) {
-                        sections.push({
-                            name: "Основной сметный расчет",
-                            planWorks: 0,
-                            planMaterials: 0,
-                            planTotal: 0
-                        });
+                        sections.push({ name: "Основной сметный расчет", planWorks: 0, planMaterials: 0, planTotal: 0 });
                     }
 
-                    const estimateObj = {
-                        name: file.name,
-                        data: e.target.result,
-                        date: new Date().toLocaleString()
-                    };
+                    const estimateObj = { name: file.name, data: e.target.result, date: new Date().toLocaleString() };
 
                     let projects = JSON.parse(localStorage.getItem('rsk_projects'));
                     projects = projects.map(p => {
                         if (p.id === currentActiveProjId) {
                             p.estimate = estimateObj;
-                            p.sections = sections.map(sec => {
-                                return {
-                                    name: sec.name,
-                                    planWorks: sec.planWorks,
-                                    planMaterials: sec.planMaterials,
-                                    planTotal: sec.planTotal
-                                };
-                            });
+                            p.sections = sections.map(sec => ({
+                                name: sec.name,
+                                planWorks: sec.planWorks,
+                                planMaterials: sec.planMaterials,
+                                planTotal: sec.planTotal
+                            }));
                         }
                         return p;
                     });
@@ -1176,11 +1139,7 @@
                 return;
             }
 
-            let sumPlanWorks = 0;
-            let sumPlanMat = 0;
-            let sumPlanTotal = 0;
-            let sumFactWorks = 0;
-            let sumFactMat = 0;
+            let sumPlanWorks = 0, sumPlanMat = 0, sumPlanTotal = 0, sumFactWorks = 0, sumFactMat = 0;
 
             container.innerHTML = p.sections.map((sec, idx) => {
                 const facts = getSectionFacts(p.name, sec.name);
@@ -1196,7 +1155,6 @@
                 const isWorkOver = facts.factWorks > sec.planWorks;
 
                 const matBadgeClass = isMatOver ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-[#15803d] border-emerald-100';
-                
                 const matIndicator = isMatOver ? `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold ml-1">⚠️ Перерасход на ${(facts.factMaterials - sec.planMaterials).toLocaleString('ru-RU')} грн</span>` : `<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold ml-1">✔ В норме</span>`;
                 const workIndicator = isWorkOver ? `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold ml-1">⚠️ Перерасход на ${(facts.factWorks - sec.planWorks).toLocaleString('ru-RU')} грн</span>` : `<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold ml-1">✔ В норме</span>`;
 
@@ -1228,9 +1186,7 @@
                                     <span>План: <b>${sec.planTotal.toLocaleString('ru-RU')} грн</b></span>
                                     <span>Факт: <b class="${factTotal > sec.planTotal ? 'text-red-600' : 'text-[#15803d]'}">${factTotal.toLocaleString('ru-RU')} грн</b></span>
                                 </div>
-                                <button type="button" class="bg-emerald-100 hover:bg-emerald-200 text-[#15803d] text-[11px] font-semibold px-2.5 py-1 rounded-lg transition shadow-sm">
-                                    Подробнее
-                                </button>
+                                <button type="button" class="bg-emerald-100 hover:bg-emerald-200 text-[#15803d] text-[11px] font-semibold px-2.5 py-1 rounded-lg transition shadow-sm">Подробнее</button>
                             </div>
                         </div>
 
@@ -1241,7 +1197,6 @@
                                 <p>Материалы: <strong class="text-gray-800">${sec.planMaterials.toLocaleString('ru-RU')} грн</strong></p>
                                 <p class="pt-1 border-t text-sm">Итого планируемые: <strong class="text-[#15803d]">${sec.planTotal.toLocaleString('ru-RU')} грн</strong></p>
                             </div>
-                            
                             <div class="p-3 rounded-lg border space-y-2 ${matBadgeClass}">
                                 <div class="flex justify-between items-center">
                                     <p class="font-bold uppercase tracking-wider text-[10px]">💰 ФАКТИЧЕСКИЕ ЗАТРАТЫ</p>
@@ -1255,9 +1210,7 @@
 
                         <div id="section-details-${idx}" class="hidden bg-white border-t p-4 space-y-2">
                             <p class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-1">🛒 Детализация оплат и закупленных материалов:</p>
-                            <div class="space-y-1">
-                                ${materialsHtml}
-                            </div>
+                            <div class="space-y-1">${materialsHtml}</div>
                         </div>
                     </div>
                 `;
@@ -1286,7 +1239,6 @@
             if (!p || !p.estimate) return;
 
             document.getElementById('modal-estimate-title').innerText = `📄 ${p.estimate.name}`;
-            
             const blob = new Blob([new Uint8Array(p.estimate.data)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const blobUrl = URL.createObjectURL(blob);
 
@@ -1302,7 +1254,6 @@
                     <a href="${blobUrl}" download="${p.estimate.name}" class="inline-block bg-[#15803d] text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#166534] transition">Скачать ${p.estimate.name}</a>
                 </div>
             `;
-
             document.getElementById('estimate-viewer-modal').classList.remove('hidden');
         }
 
@@ -1464,7 +1415,6 @@
             const projectName = document.getElementById('order-proj').value;
             const projects = JSON.parse(localStorage.getItem('rsk_projects'));
             const sectionSelect = document.getElementById('order-section');
-            
             const currentProj = projects.find(p => p.name === projectName);
 
             if (currentProj && currentProj.sections && currentProj.sections.length > 0) {
@@ -1666,9 +1616,7 @@
         function archiveOrder(id) {
             if (confirm('Перенести заявку в архив?')) {
                 let orders = JSON.parse(localStorage.getItem('rsk_orders')).map(o => {
-                    if (o.id === id) {
-                        o.status = 'archived';
-                    }
+                    if (o.id === id) o.status = 'archived';
                     return o;
                 });
                 localStorage.setItem('rsk_orders', JSON.stringify(orders));
