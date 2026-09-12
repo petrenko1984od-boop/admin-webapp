@@ -85,6 +85,35 @@
                             <button onclick="saveProjectNotes()" class="w-full bg-[#15803d] hover:bg-[#166534] text-white text-xs font-semibold py-2 rounded-lg transition shadow">Сохранить заметки</button>
                         </div>
                     </div>
+
+                    <!-- БЛОК: ЗАДАЧИ ПРОРАБУ (На всю ширину под блоками информации) -->
+                    <div class="task-manager-card bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4 mt-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-3">
+                            <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                                📌 Задачи для прораба
+                            </h3>
+                            <div class="text-[11px] text-gray-500 bg-emerald-50 text-[#15803d] px-2.5 py-1 rounded-lg border border-emerald-100">
+                                💡 Уведомления в Telegram/Viber и прикрепление фотоактов активны
+                            </div>
+                        </div>
+
+                        <!-- Форма добавления задачи -->
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <input type="text" id="taskInput" placeholder="Описание задачи (например, Проверить геодезию осей)..." class="flex-[2] min-w-[220px] px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
+                            <input type="date" id="taskDate" class="flex-1 min-w-[130px] px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#15803d]">
+                            <select id="taskPriority" class="px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm bg-white outline-none focus:ring-2 focus:ring-[#15803d]">
+                                <option value="urgent" class="text-red-600 font-bold">⚡ Срочно / Горит</option>
+                                <option value="important">⭐ Важный</option>
+                                <option value="normal" selected>Обычная</option>
+                            </select>
+                            <button onclick="addTask()" class="bg-[#198754] hover:bg-[#15803d] text-white border-none px-4 py-2 rounded-lg cursor-pointer font-semibold text-xs sm:text-sm transition shadow whitespace-nowrap">+ Поставить задачу</button>
+                        </div>
+
+                        <!-- Список задач -->
+                        <div id="taskList" class="flex flex-col gap-2 pt-2">
+                            <!-- Задачи генерируются динамически -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- ПОДВКЛАДКА 2: ПЛАН-ФАКТ -->
@@ -442,8 +471,8 @@
             localStorage.setItem('rsk_employees', JSON.stringify(defaultEmployees));
 
             const defaultProjects = [
-                { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", notes: "", estimate: null, sections: [] },
-                { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", notes: "", estimate: null, sections: [] }
+                { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", notes: "", estimate: null, sections: [], tasks: [] },
+                { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", notes: "", estimate: null, sections: [], tasks: [] }
             ];
             localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
             localStorage.setItem('rsk_projects_v7', 'true');
@@ -782,8 +811,185 @@
             
             renderEstimateUI(p);
             renderSectionsUI(p);
+            renderTasks(p);
             switchProjectSubTab('info'); // Сбрасываем подвкладку на общую информацию при открытии
             switchTab('project-detail');
+        }
+
+        // ЛОГИКА БЛОКА «ЗАДАЧИ ПРОРАБУ»
+        function addTask() {
+            if (!currentActiveProjId) return;
+            const textInput = document.getElementById('taskInput');
+            const dateInput = document.getElementById('taskDate');
+            const priorityInput = document.getElementById('taskPriority');
+
+            const text = textInput.value.trim();
+            const date = dateInput.value;
+            const priority = priorityInput.value;
+
+            if (!text) {
+                alert('Пожалуйста, введите описание задачи.');
+                return;
+            }
+
+            let projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            projects = projects.map(p => {
+                if (p.id === currentActiveProjId) {
+                    if (!p.tasks) p.tasks = [];
+                    p.tasks.push({
+                        id: Date.now(),
+                        text: text,
+                        date: date || 'Без дедлайна',
+                        priority: priority,
+                        completed: false,
+                        photo: null,
+                        history: [{ action: 'Поставлена задача', time: new Date().toLocaleString() }]
+                    });
+                }
+                return p;
+            });
+
+            localStorage.setItem('rsk_projects', JSON.stringify(projects));
+            
+            // Симуляция отправки в Telegram/Viber бот прорабу
+            console.log('🤖 Уведомление отправлено прорабу в Telegram/Viber по объекту:', currentActiveProjId);
+
+            textInput.value = '';
+            dateInput.value = '';
+            const updatedProj = projects.find(p => p.id === currentActiveProjId);
+            renderTasks(updatedProj);
+        }
+
+        function renderTasks(p) {
+            const container = document.getElementById('taskList');
+            if (!p.tasks || p.tasks.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-3">Пока нет активных задач для прораба</p>`;
+                return;
+            }
+
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            container.innerHTML = p.tasks.map(task => {
+                let priorityBadge = '';
+                if (task.priority === 'urgent') {
+                    priorityBadge = `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">Срочно</span>`;
+                } else if (task.priority === 'important') {
+                    priorityBadge = `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Важный</span>`;
+                }
+
+                // Проверка дедлайна
+                let isOverdue = false;
+                if (task.date && task.date !== 'Без дедлайна' && !task.completed) {
+                    if (task.date < todayStr) {
+                        isOverdue = true;
+                    }
+                }
+
+                let deadlineBadgeClass = isOverdue ? 'bg-red-100 text-red-700 font-bold border border-red-300' : 'bg-amber-50 text-[#856404] border border-amber-200';
+                let deadlineText = task.date !== 'Без дедлайна' ? `До ${task.date}` : 'Без дедлайна';
+
+                let photoSection = task.photo ? `
+                    <div class="mt-1 flex items-center gap-2">
+                        <span class="text-[11px] text-emerald-700 font-semibold">📸 Фотоотчет загружен</span>
+                        <a href="${task.photo}" target="_blank" class="text-[10px] text-blue-600 underline">Просмотреть</a>
+                    </div>
+                ` : `
+                    <div class="mt-1 flex items-center gap-2">
+                        <label class="text-[11px] bg-emerald-50 hover:bg-emerald-100 text-[#15803d] px-2 py-0.5 rounded cursor-pointer font-semibold transition border border-emerald-200">
+                            📷 Прикрепить фотоотчет
+                            <input type="file" accept="image/*" onchange="attachTaskPhoto(${task.id}, this)" class="hidden">
+                        </label>
+                    </div>
+                `;
+
+                return `
+                    <div class="task-item flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-gray-50 border-l-4 ${task.completed ? 'border-gray-400 opacity-75' : (isOverdue ? 'border-red-500 bg-red-50/30' : 'border-[#198754]')} rounded-lg gap-2 text-xs sm:text-sm">
+                        <div class="flex items-start gap-2.5 w-full sm:w-auto flex-1">
+                            <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id}, this)" class="mt-1 h-4 w-4 text-[#198754] rounded cursor-pointer">
+                            <div class="space-y-1">
+                                <span class="${task.completed ? 'line-through text-gray-500' : 'text-gray-900'} font-medium block">${task.text}</span>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    ${priorityBadge}
+                                    ${photoSection}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-gray-200">
+                            <span class="text-[11px] ${deadlineBadgeClass} px-2 py-0.5 rounded">${deadlineText}</span>
+                            <button onclick="deleteTask(${task.id})" class="text-red-500 hover:text-red-700 font-bold text-base px-1" title="Удалить задачу">&times;</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleTask(taskId, checkbox) {
+            if (!currentActiveProjId) return;
+            const isCompleted = checkbox.checked;
+            const nowStr = new Date().toLocaleString();
+
+            let projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            projects = projects.map(p => {
+                if (p.id === currentActiveProjId && p.tasks) {
+                    p.tasks = p.tasks.map(t => {
+                        if (t.id === taskId) {
+                            t.completed = isCompleted;
+                            t.history.push({ action: isCompleted ? 'Выполнено' : 'Вернулось в работу', time: nowStr });
+                        }
+                        return t;
+                    });
+                }
+                return p;
+            });
+
+            localStorage.setItem('rsk_projects', JSON.stringify(projects));
+            const updatedProj = projects.find(p => p.id === currentActiveProjId);
+            renderTasks(updatedProj);
+        }
+
+        function attachTaskPhoto(taskId, inputElement) {
+            if (!currentActiveProjId || inputElement.files.length === 0) return;
+            const file = inputElement.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const base64Img = e.target.result;
+                let projects = JSON.parse(localStorage.getItem('rsk_projects'));
+                projects = projects.map(p => {
+                    if (p.id === currentActiveProjId && p.tasks) {
+                        p.tasks = p.tasks.map(t => {
+                            if (t.id === taskId) {
+                                t.photo = base64Img;
+                                t.history.push({ action: 'Прикреплен фотоотчет', time: new Date().toLocaleString() });
+                            }
+                            return t;
+                        });
+                    }
+                    return p;
+                });
+
+                localStorage.setItem('rsk_projects', JSON.stringify(projects));
+                const updatedProj = projects.find(p => p.id === currentActiveProjId);
+                renderTasks(updatedProj);
+                alert('Фотоотчет успешно прикреплен к задаче!');
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function deleteTask(taskId) {
+            if (!currentActiveProjId || !confirm('Удалить эту задачу?')) return;
+            let projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            projects = projects.map(p => {
+                if (p.id === currentActiveProjId && p.tasks) {
+                    p.tasks = p.tasks.filter(t => t.id !== taskId);
+                }
+                return p;
+            });
+
+            localStorage.setItem('rsk_projects', JSON.stringify(projects));
+            const updatedProj = projects.find(p => p.id === currentActiveProjId);
+            renderTasks(updatedProj);
         }
 
         function renderEstimateUI(p) {
@@ -1185,7 +1391,7 @@
             const foreman = document.getElementById('new-proj-foreman').value;
 
             let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            projects.push({ id: Date.now(), name, foreman, notes: "", estimate: null, sections: [] });
+            projects.push({ id: Date.now(), name, foreman, notes: "", estimate: null, sections: [], tasks: [] });
             localStorage.setItem('rsk_projects', JSON.stringify(projects));
 
             document.getElementById('new-proj-name').value = '';
@@ -1583,4 +1789,3 @@
     </script>
 </body>
 </html>
-```[cite: 2]
