@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Подключаем библиотеку SheetJS для чтения и записи Excel в браузере -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Подключаем официальный клиент Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen">
 
@@ -15,11 +17,11 @@
         <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div class="flex items-center gap-3">
                 <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center">
-                    <img src="logo.png" alt="RSK Logo" class="h-9 w-auto object-contain" onerror="this.style.display='none'">
+                    <span class="text-xs font-bold text-[#15803d] px-1">RSK</span>
                 </div>
                 <div>
                     <h1 class="text-base font-bold tracking-wide leading-tight">RSK Odessa</h1>
-                    <p class="text-[10px] text-emerald-100 tracking-wider uppercase">building & repair</p>
+                    <p class="text-[10px] text-emerald-100 tracking-wider uppercase">building & repair (Cloud Supabase)</p>
                 </div>
             </div>
             <div class="flex flex-wrap gap-2 items-center">
@@ -409,24 +411,66 @@
     </div>
 
     <script>
-        if (!localStorage.getItem('rsk_employees') || !localStorage.getItem('rsk_projects_v7')) {
-            const defaultEmployees = [
-                { id: 1, name: "Иван Прорабов", position: "Прораб", phone: "+38 (050) 123-45-67", notes: "" },
-                { id: 2, name: "Петренко Сергей Николаевич", position: "Прораб", phone: "+380507016548", notes: "" },
-                { id: 3, name: "Олег Снабженец", position: "Снабженец", phone: "+38 (067) 987-65-43", notes: "" }
-            ];
-            localStorage.setItem('rsk_employees', JSON.stringify(defaultEmployees));
+        // Инициализация клиента Supabase
+        const SUPABASE_URL = 'https://pcwhgqepzbvykfcfuxt.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_HJfhChiHXW8GAejLcg9hEQ_LWEnJnR5';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            const defaultProjects = [
-                { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", notes: "", estimate: null, sections: [] },
-                { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", notes: "", estimate: null, sections: [] }
-            ];
-            localStorage.setItem('rsk_projects', JSON.stringify(defaultProjects));
-            localStorage.setItem('rsk_projects_v7', 'true');
-        }
+        // Кэш в памяти для быстрого рендеринга
+        let appData = {
+            employees: [],
+            projects: [],
+            orders: []
+        };
 
-        if (!localStorage.getItem('rsk_orders')) {
-            localStorage.setItem('rsk_orders', JSON.stringify([]));
+        // Загрузка данных из облака Supabase при старте
+        async function initCloudData() {
+            try {
+                // Загружаем сотрудников
+                const { data: empData, error: empErr } = await supabaseClient.from('employees').select('*');
+                if (!empErr && empData) {
+                    if (empData.length === 0) {
+                        const defaultEmployees = [
+                            { id: 1, name: "Иван Прорабов", position: "Прораб", phone: "+38 (050) 123-45-67", notes: "" },
+                            { id: 2, name: "Петренко Сергей Николаевич", position: "Прораб", phone: "+380507016548", notes: "" },
+                            { id: 3, name: "Олег Снабженец", position: "Снабженец", phone: "+38 (067) 987-65-43", notes: "" }
+                        ];
+                        await supabaseClient.from('employees').insert(defaultEmployees);
+                        appData.employees = defaultEmployees;
+                    } else {
+                        appData.employees = empData;
+                    }
+                }
+
+                // Загружаем объекты
+                const { data: projData, error: projErr } = await supabaseClient.from('projects').select('*');
+                if (!projErr && projData) {
+                    if (projData.length === 0) {
+                        const defaultProjects = [
+                            { id: 1, name: "Частный дом (Ивановка)", foreman: "Иван Прорабов", notes: "", estimate: null, sections: [] },
+                            { id: 2, name: "Реконструкция офиса", foreman: "Петренко Сергей Николаевич", notes: "", estimate: null, sections: [] }
+                        ];
+                        await supabaseClient.from('projects').insert(defaultProjects);
+                        appData.projects = defaultProjects;
+                    } else {
+                        appData.projects = projData;
+                    }
+                }
+
+                // Загружаем заявки
+                const { data: ordData, error: ordErr } = await supabaseClient.from('orders').select('*');
+                if (!ordErr && ordData) {
+                    appData.orders = ordData;
+                }
+
+                updateBadges();
+                renderProjects();
+                renderEmployees();
+                renderOrders();
+            } catch (err) {
+                console.error('Ошибка инициализации Supabase:', err);
+                alert('Не удалось подключиться к облачной базе данных Supabase. Проверьте интернет-соединение.');
+            }
         }
 
         document.getElementById('order-date').valueAsDate = new Date();
@@ -502,7 +546,7 @@
         }
 
         function getAllClosedMaterials() {
-            const orders = JSON.parse(localStorage.getItem('rsk_orders')) || [];
+            const orders = appData.orders || [];
             let list = [];
             orders.forEach(o => {
                 if (o.status === '🟢 Закрыта' && o.items && Array.isArray(o.items)) {
@@ -677,8 +721,8 @@
         }
 
         function renderProjects() {
-            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            const projects = appData.projects;
+            const employees = appData.employees;
             const container = document.getElementById('projects-container');
             updateProjectBadgeCount();
             
@@ -715,8 +759,8 @@
         let currentActiveProjId = null;
 
         function openProjectDetail(id) {
-            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            const projects = appData.projects;
+            const employees = appData.employees;
             const p = projects.find(item => item.id === id);
             if (!p) return;
 
@@ -760,7 +804,7 @@
             }
         }
 
-        function uploadAndParseEstimate() {
+        async function uploadAndParseEstimate() {
             if (!currentActiveProjId) return;
             const fileInput = document.getElementById('estimate-file-input');
             if (fileInput.files.length === 0) {
@@ -771,7 +815,7 @@
             const file = fileInput.files[0];
             const reader = new FileReader();
 
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
@@ -830,31 +874,38 @@
 
                     const estimateObj = {
                         name: file.name,
-                        data: e.target.result,
                         date: new Date().toLocaleString()
                     };
 
-                    let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-                    projects = projects.map(p => {
+                    const newSections = sections.map(sec => ({
+                        name: sec.name,
+                        planWorks: sec.planWorks,
+                        planMaterials: sec.planMaterials,
+                        planTotal: sec.planTotal
+                    }));
+
+                    const { error } = await supabaseClient
+                        .from('projects')
+                        .update({ estimate: estimateObj, sections: newSections })
+                        .eq('id', currentActiveProjId);
+
+                    if (error) {
+                        alert('Ошибка сохранения сметы в облако: ' + error.message);
+                        return;
+                    }
+
+                    appData.projects = appData.projects.map(p => {
                         if (p.id === currentActiveProjId) {
                             p.estimate = estimateObj;
-                            p.sections = sections.map(sec => {
-                                return {
-                                    name: sec.name,
-                                    planWorks: sec.planWorks,
-                                    planMaterials: sec.planMaterials,
-                                    planTotal: sec.planTotal
-                                };
-                            });
+                            p.sections = newSections;
                         }
                         return p;
                     });
 
-                    localStorage.setItem('rsk_projects', JSON.stringify(projects));
-                    const updatedProj = projects.find(p => p.id === currentActiveProjId);
+                    const updatedProj = appData.projects.find(p => p.id === currentActiveProjId);
                     renderEstimateUI(updatedProj);
                     renderSectionsUI(updatedProj);
-                    alert('Смета успешно загружена и разделы автоматически созданы!');
+                    alert('Смета успешно загружена и сохранена в облако!');
 
                 } catch (err) {
                     console.error(err);
@@ -866,7 +917,7 @@
         }
 
         function getSectionFacts(projectName, sectionName) {
-            const orders = JSON.parse(localStorage.getItem('rsk_orders')) || [];
+            const orders = appData.orders || [];
             let factMaterials = 0;
             let factWorks = 0;
             let materialsList = [];
@@ -1002,25 +1053,17 @@
         }
 
         function viewEstimateFile() {
-            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const projects = appData.projects;
             const p = projects.find(item => item.id === currentActiveProjId);
             if (!p || !p.estimate) return;
 
             document.getElementById('modal-estimate-title').innerText = `📄 ${p.estimate.name}`;
             
-            const blob = new Blob([new Uint8Array(p.estimate.data)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const blobUrl = URL.createObjectURL(blob);
-
-            const downloadBtn = document.getElementById('modal-estimate-download');
-            downloadBtn.href = blobUrl;
-            downloadBtn.download = p.estimate.name;
-
             const container = document.getElementById('modal-estimate-content');
             container.innerHTML = `
                 <div class="text-center p-6 space-y-3 bg-white rounded-xl shadow-sm max-w-md">
-                    <p class="text-sm font-bold text-gray-800">Файл сметы успешно загружен и разобран.</p>
-                    <p class="text-xs text-gray-500">Вы можете скачать оригинальный файл Excel на свое устройство.</p>
-                    <a href="${blobUrl}" download="${p.estimate.name}" class="inline-block bg-[#15803d] text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#166534] transition">Скачать ${p.estimate.name}</a>
+                    <p class="text-sm font-bold text-gray-800">Файл сметы «${p.estimate.name}» успешно загружен и разобран в облако.</p>
+                    <p class="text-xs text-gray-500">Дата загрузки: ${p.estimate.date}</p>
                 </div>
             `;
 
@@ -1032,37 +1075,56 @@
             document.getElementById('modal-estimate-content').innerHTML = '';
         }
 
-        function deleteEstimateFile() {
+        async function deleteEstimateFile() {
             if (confirm('Удалить прикрепленную смету и все разделы?')) {
-                let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-                projects = projects.map(p => {
+                const { error } = await supabaseClient
+                    .from('projects')
+                    .update({ estimate: null, sections: [] })
+                    .eq('id', currentActiveProjId);
+
+                if (error) {
+                    alert('Ошибка удаления сметы: ' + error.message);
+                    return;
+                }
+
+                appData.projects = appData.projects.map(p => {
                     if (p.id === currentActiveProjId) {
                         p.estimate = null;
                         p.sections = [];
                     }
                     return p;
                 });
-                localStorage.setItem('rsk_projects', JSON.stringify(projects));
-                const updatedProj = projects.find(p => p.id === currentActiveProjId);
+
+                const updatedProj = appData.projects.find(p => p.id === currentActiveProjId);
                 renderEstimateUI(updatedProj);
                 renderSectionsUI(updatedProj);
             }
         }
 
-        function saveProjectNotes() {
+        async function saveProjectNotes() {
             if (!currentActiveProjId) return;
             const notes = document.getElementById('card-proj-notes').value;
-            let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            projects = projects.map(p => {
+
+            const { error } = await supabaseClient
+                .from('projects')
+                .update({ notes })
+                .eq('id', currentActiveProjId);
+
+            if (error) {
+                alert('Ошибка сохранения заметок: ' + error.message);
+                return;
+            }
+
+            appData.projects = appData.projects.map(p => {
                 if (p.id === currentActiveProjId) p.notes = notes;
                 return p;
             });
-            localStorage.setItem('rsk_projects', JSON.stringify(projects));
+
             alert('Заметки по объекту успешно сохранены!');
         }
 
         function renderEmployees() {
-            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            const employees = appData.employees;
             const container = document.getElementById('employees-container');
             updateEmployeeBadgeCount();
             
@@ -1088,7 +1150,7 @@
         let currentActiveEmpId = null;
 
         function openEmployeeCard(id) {
-            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            const employees = appData.employees;
             const emp = employees.find(e => e.id === id);
             if (!emp) return;
 
@@ -1109,15 +1171,25 @@
             currentActiveEmpId = null;
         }
 
-        function saveEmployeeNotes() {
+        async function saveEmployeeNotes() {
             if (!currentActiveEmpId) return;
             const notes = document.getElementById('card-emp-notes').value;
-            let employees = JSON.parse(localStorage.getItem('rsk_employees'));
-            employees = employees.map(e => {
+
+            const { error } = await supabaseClient
+                .from('employees')
+                .update({ notes })
+                .eq('id', currentActiveEmpId);
+
+            if (error) {
+                alert('Ошибка сохранения заметок сотрудника: ' + error.message);
+                return;
+            }
+
+            appData.employees = appData.employees.map(e => {
                 if (e.id === currentActiveEmpId) e.notes = notes;
                 return e;
             });
-            localStorage.setItem('rsk_employees', JSON.stringify(employees));
+
             alert('Заметки успешно сохранены!');
         }
 
@@ -1128,31 +1200,40 @@
         function closeAddProjectModal() { document.getElementById('project-modal').classList.add('hidden'); }
 
         function updateForemanDropdown() {
-            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
+            const employees = appData.employees;
             const select = document.getElementById('new-proj-foreman');
             if (select) {
                 select.innerHTML = employees.map(e => `<option value="${e.name}">${e.name} (${e.position})</option>`).join('');
             }
         }
 
-        function saveNewProject(e) {
+        async function saveNewProject(e) {
             e.preventDefault();
             const name = document.getElementById('new-proj-name').value.trim();
             const foreman = document.getElementById('new-proj-foreman').value;
 
-            let projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            projects.push({ id: Date.now(), name, foreman, notes: "", estimate: null, sections: [] });
-            localStorage.setItem('rsk_projects', JSON.stringify(projects));
+            const newProj = { id: Date.now(), name, foreman, notes: "", estimate: null, sections: [] };
 
+            const { error } = await supabaseClient.from('projects').insert([newProj]);
+            if (error) {
+                alert('Ошибка создания объекта в облаке: ' + error.message);
+                return;
+            }
+
+            appData.projects.push(newProj);
             document.getElementById('new-proj-name').value = '';
             closeAddProjectModal();
             renderProjects();
         }
 
-        function deleteProject(id) {
+        async function deleteProject(id) {
             if (confirm('Удалить объект?')) {
-                let projects = JSON.parse(localStorage.getItem('rsk_projects')).filter(p => p.id !== id);
-                localStorage.setItem('rsk_projects', JSON.stringify(projects));
+                const { error } = await supabaseClient.from('projects').delete().eq('id', id);
+                if (error) {
+                    alert('Ошибка удаления: ' + error.message);
+                    return;
+                }
+                appData.projects = appData.projects.filter(p => p.id !== id);
                 switchTab('projects');
             }
         }
@@ -1160,32 +1241,41 @@
         function openAddEmployeeModal() { document.getElementById('employee-modal').classList.remove('hidden'); }
         function closeAddEmployeeModal() { document.getElementById('employee-modal').classList.add('hidden'); }
 
-        function saveNewEmployee(e) {
+        async function saveNewEmployee(e) {
             e.preventDefault();
             const name = document.getElementById('emp-name').value.trim();
             const position = document.getElementById('emp-position').value;
             const phone = document.getElementById('emp-phone').value.trim();
 
-            let employees = JSON.parse(localStorage.getItem('rsk_employees'));
-            employees.push({ id: Date.now(), name, position, phone, notes: "" });
-            localStorage.setItem('rsk_employees', JSON.stringify(employees));
+            const newEmp = { id: Date.now(), name, position, phone, notes: "" };
 
+            const { error } = await supabaseClient.from('employees').insert([newEmp]);
+            if (error) {
+                alert('Ошибка добавления сотрудника: ' + error.message);
+                return;
+            }
+
+            appData.employees.push(newEmp);
             document.getElementById('emp-name').value = '';
             document.getElementById('emp-phone').value = '';
             closeAddEmployeeModal();
             renderEmployees();
         }
 
-        function deleteEmployee(id) {
+        async function deleteEmployee(id) {
             if (confirm('Удалить сотрудника?')) {
-                let employees = JSON.parse(localStorage.getItem('rsk_employees')).filter(e => e.id !== id);
-                localStorage.setItem('rsk_employees', JSON.stringify(employees));
+                const { error } = await supabaseClient.from('employees').delete().eq('id', id);
+                if (error) {
+                    alert('Ошибка удаления: ' + error.message);
+                    return;
+                }
+                appData.employees = appData.employees.filter(e => e.id !== id);
                 renderEmployees();
             }
         }
 
         function updateProjectDropdowns() {
-            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const projects = appData.projects;
             const orderSelect = document.getElementById('order-proj');
             if (orderSelect) {
                 orderSelect.innerHTML = projects.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
@@ -1195,7 +1285,7 @@
 
         function onOrderProjectChange() {
             const projectName = document.getElementById('order-proj').value;
-            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
+            const projects = appData.projects;
             const sectionSelect = document.getElementById('order-section');
             
             const currentProj = projects.find(p => p.name === projectName);
@@ -1252,7 +1342,7 @@
             }
         }
 
-        function submitMaterialOrder(e) {
+        async function submitMaterialOrder(e) {
             e.preventDefault();
             const sectionVal = document.getElementById('order-section').value;
             if (!sectionVal) {
@@ -1290,18 +1380,21 @@
                 createdAt: new Date().toLocaleString()
             };
 
-            let orders = JSON.parse(localStorage.getItem('rsk_orders'));
-            orders.unshift(newOrder);
-            localStorage.setItem('rsk_orders', JSON.stringify(orders));
+            const { error } = await supabaseClient.from('orders').insert([newOrder]);
+            if (error) {
+                alert('Ошибка отправки заявки в облако: ' + error.message);
+                return;
+            }
 
-            updateOrdersBadgeCount();
+            appData.orders.unshift(newOrder);
+            updateBadges();
             switchTab('orders');
         }
 
         function renderOrders() {
-            const orders = JSON.parse(localStorage.getItem('rsk_orders'));
+            const orders = appData.orders;
             const container = document.getElementById('orders-container');
-            updateOrdersBadgeCount();
+            updateBadges();
 
             const activeOrders = orders.filter(o => o.status !== 'archived');
 
@@ -1387,30 +1480,46 @@
             }).join('');
         }
 
-        function setOrderStatus(id, status) {
-            let orders = JSON.parse(localStorage.getItem('rsk_orders')).map(o => {
+        async function setOrderStatus(id, status) {
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({ status })
+                .eq('id', id);
+
+            if (error) {
+                alert('Ошибка обновления статуса: ' + error.message);
+                return;
+            }
+
+            appData.orders = appData.orders.map(o => {
                 if (o.id === id) o.status = status;
                 return o;
             });
-            localStorage.setItem('rsk_orders', JSON.stringify(orders));
             renderOrders();
         }
 
-        function archiveOrder(id) {
+        async function archiveOrder(id) {
             if (confirm('Перенести заявку в архив?')) {
-                let orders = JSON.parse(localStorage.getItem('rsk_orders')).map(o => {
-                    if (o.id === id) {
-                        o.status = 'archived';
-                    }
+                const { error } = await supabaseClient
+                    .from('orders')
+                    .update({ status: 'archived' })
+                    .eq('id', id);
+
+                if (error) {
+                    alert('Ошибка архивации: ' + error.message);
+                    return;
+                }
+
+                appData.orders = appData.orders.map(o => {
+                    if (o.id === id) o.status = 'archived';
                     return o;
                 });
-                localStorage.setItem('rsk_orders', JSON.stringify(orders));
                 renderOrders();
             }
         }
 
         function openCloseOrderModal(id) {
-            const orders = JSON.parse(localStorage.getItem('rsk_orders'));
+            const orders = appData.orders;
             const order = orders.find(o => o.id === id);
             if (!order) return;
 
@@ -1461,7 +1570,7 @@
             document.getElementById('close-order-modal').classList.add('hidden');
         }
 
-        function confirmOrderPurchase(e) {
+        async function confirmOrderPurchase(e) {
             e.preventDefault();
             const id = parseInt(document.getElementById('modal-order-id').value);
             const supplier = document.getElementById('modal-order-supplier').value.trim();
@@ -1491,52 +1600,66 @@
                 });
             });
 
-            let orders = JSON.parse(localStorage.getItem('rsk_orders'));
-            let targetOrder = orders.find(o => o.id === id);
+            const purchaseData = { sum: totalSum, supplier, closedDate: closedTimestamp };
 
-            if (!targetOrder) return;
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({
+                    status: "🟢 Закрыта",
+                    items: updatedItemsList,
+                    purchaseData: purchaseData
+                })
+                .eq('id', id);
 
-            targetOrder.status = "🟢 Закрыта";
-            targetOrder.items = updatedItemsList;
-            targetOrder.purchaseData = { sum: totalSum, supplier, closedDate: closedTimestamp };
-            localStorage.setItem('rsk_orders', JSON.stringify(orders));
+            if (error) {
+                alert('Ошибка закрытия закупки: ' + error.message);
+                return;
+            }
+
+            appData.orders = appData.orders.map(o => {
+                if (o.id === id) {
+                    o.status = "🟢 Закрыта";
+                    o.items = updatedItemsList;
+                    o.purchaseData = purchaseData;
+                }
+                return o;
+            });
 
             closeModalCloseOrder();
             renderOrders();
-            alert(`Закупка успешно проведена! Сумма ${totalSum.toLocaleString('ru-RU')} грн учтена в факте раздела «${targetOrder.section}» объекта «${targetOrder.project}».`);
+            alert(`Закупка успешно проведена! Сумма ${totalSum.toLocaleString('ru-RU')} грн учтена в факте.`);
         }
 
-        function clearOrders() {
-            if (confirm('Очистить историю?')) {
-                localStorage.setItem('rsk_orders', JSON.stringify([]));
+        async function clearOrders() {
+            if (confirm('Очистить историю всех заявок?')) {
+                const { error } = await supabaseClient.from('orders').delete().neq('id', 0);
+                if (error) {
+                    alert('Ошибка очистки: ' + error.message);
+                    return;
+                }
+                appData.orders = [];
                 renderOrders();
             }
         }
 
-        function updateOrdersBadgeCount() {
-            const orders = JSON.parse(localStorage.getItem('rsk_orders')) || [];
+        function updateBadges() {
+            const orders = appData.orders || [];
             const activeOrders = orders.filter(o => o.status !== 'archived');
-            const badge = document.getElementById('orders-badge');
-            if (badge) badge.innerText = activeOrders.length;
+            const ordersBadge = document.getElementById('orders-badge');
+            if (ordersBadge) ordersBadge.innerText = activeOrders.length;
+
+            const employeesBadge = document.getElementById('employees-badge');
+            if (employeesBadge) employeesBadge.innerText = appData.employees.length;
+
+            const projectsBadge = document.getElementById('projects-badge');
+            if (projectsBadge) projectsBadge.innerText = appData.projects.length;
         }
 
-        function updateEmployeeBadgeCount() {
-            const employees = JSON.parse(localStorage.getItem('rsk_employees'));
-            const badge = document.getElementById('employees-badge');
-            if (badge) badge.innerText = employees.length;
-        }
+        function updateProjectBadgeCount() { updateBadges(); }
+        function updateEmployeeBadgeCount() { updateBadges(); }
 
-        function updateProjectBadgeCount() {
-            const projects = JSON.parse(localStorage.getItem('rsk_projects'));
-            const badge = document.getElementById('projects-badge');
-            if (badge) badge.innerText = projects.length;
-        }
-
-        updateOrdersBadgeCount();
-        updateEmployeeBadgeCount();
-        updateProjectBadgeCount();
-        renderProjects();
+        // Запуск загрузки данных из Supabase при старте страницы
+        initCloudData();
     </script>
 </body>
 </html>
-```[cite: 6]
